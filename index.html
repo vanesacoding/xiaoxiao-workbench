@@ -1,0 +1,2350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#7A9CA5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="小小工作台">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>小小的工作台</title>
+  <style>
+    :root {
+      --brand:#7A9CA5;
+      --brand-light:#EDF2F3;
+      --brand-dark:#5A7A82;
+      --success:#6B9B7A;
+      --warn:#D4A853;
+      --error:#C97D7D;
+      --bg:#F5F5F0;
+      --card:#FFFFFF;
+      --border:#E8E8E8;
+      --border-focus:#7A9CA5;
+      --tag-bg:#F5F5F5;
+      --tag-text:#666666;
+      --title:#1A1A1A;
+      --body:#333333;
+      --muted:#888888;
+      --hint:#BBBBBB;
+      --radius-card:12px;
+      --radius-btn:8px;
+      --radius-input:8px;
+      --radius-tag:4px;
+      --radius-modal:16px;
+      --shadow-soft:0 0 20px rgba(0,0,0,0.03);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body {
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      background:var(--bg); overflow:hidden; height:100vh;
+      display:flex; justify-content:center; align-items:center;
+    }
+    .phone-frame {
+      width:414px; height:896px; background:var(--bg);
+      border-radius:40px; box-shadow:0 20px 60px rgba(0,0,0,0.08);
+      overflow:hidden; position:relative; display:flex;
+    }
+
+    /* 左侧导航 */
+    .sidebar {
+      width:72px; background:var(--card);
+      border-right:1px solid var(--border);
+      display:flex; flex-direction:column; align-items:center;
+      padding-top:50px; padding-bottom:20px; z-index:1;
+      overflow-y:auto; flex-shrink:0;
+    }
+    .sidebar::-webkit-scrollbar { display:none; }
+    .nav-item {
+      display:flex; flex-direction:column; align-items:center;
+      margin-bottom:20px; cursor:pointer; padding:6px 4px;
+      border-radius:8px; width:60px; transition:all 0.2s;
+    }
+    .nav-item.active .nav-icon { color:var(--brand); }
+    .nav-item.active .nav-label { color:var(--brand); font-weight:600; }
+    .nav-icon {
+      width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+      font-size:22px; margin-bottom:4px; transition:all 0.2s; color:var(--hint);
+    }
+    .nav-item.active .nav-icon { transform:scale(1.1); }
+    .nav-label { font-size:10px; color:var(--hint); text-align:center; line-height:1.25; }
+    .avatar-item .nav-icon { width:36px; height:36px; font-size:20px; color:var(--brand); }
+    .avatar-item .nav-label { font-size:11px; color:var(--brand); font-weight:600; }
+
+    /* 主内容区 */
+    .main-content { flex:1; display:flex; flex-direction:column;
+      z-index:1; overflow-y:auto; padding:20px 20px 16px 12px;
+    }
+    .main-content::-webkit-scrollbar { display:none; }
+
+    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .page-header-left { display:flex; align-items:center; gap:8px; }
+    .page-title-icon { font-size:18px; color:var(--brand); }
+    .page-title { font-size:18px; font-weight:600; color:var(--title); letter-spacing:1px; }
+    .page-header-actions { display:flex; gap:10px; }
+    .page-header-actions button {
+      background:none; border:none; font-size:18px; cursor:pointer;
+      color:var(--muted); padding:4px; border-radius:8px;
+    }
+    .page-header-actions button:hover { background:var(--tag-bg); }
+
+    .tabs { display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
+    .tab { display:flex; align-items:center; gap:4px; padding:8px 18px;
+      border-radius:var(--radius-btn); font-size:13px; cursor:pointer;
+      background:var(--card); color:var(--muted); transition:all 0.2s;
+      border:1px solid var(--border);
+    }
+    .tab.active { color:var(--brand); font-weight:600;
+      border-color:var(--brand); background:var(--brand-light);
+    }
+
+    .page { display:none; }
+    .page.active { display:block; }
+
+    /* 通用组件 */
+    .card { background:var(--card); border-radius:var(--radius-card); padding:16px;
+      margin-bottom:12px; border:1px solid var(--border);
+    }
+    .card-elevated { box-shadow:var(--shadow-soft); }
+    .btn {
+      background:var(--brand); color:#fff; border:none; border-radius:var(--radius-btn);
+      padding:10px 24px; font-size:15px; font-weight:600;
+      cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; gap:6px;
+    }
+    .btn:active { transform:scale(0.98); }
+    .btn-outline {
+      background:transparent; color:var(--body); border:1px solid #D0D0D0;
+    }
+    .btn-text { background:none; color:var(--brand); padding:0; font-weight:400; }
+    .btn-success { background:var(--success); }
+    .btn-warn { background:var(--warn); color:var(--title); }
+    .btn-error { background:var(--error); }
+    .input {
+      width:100%; padding:10px 14px; border:1px solid #E0E0E0;
+      border-radius:var(--radius-input); font-size:15px; outline:none;
+      margin-bottom:10px; background:var(--card); color:var(--body);
+    }
+    .input::placeholder { color:var(--hint); }
+    .input:focus { border-color:var(--brand-focus); box-shadow:0 0 0 3px var(--brand-light); }
+    .select {
+      padding:10px 12px; border:1px solid #E0E0E0; border-radius:var(--radius-input);
+      background:var(--card); font-size:13px; outline:none; color:var(--body);
+    }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+    .section-title { font-size:15px; font-weight:600; color:var(--title); margin:16px 0 10px; display:flex; align-items:center; gap:6px; }
+
+    /* 状态标签 */
+    .tag { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:var(--radius-tag); font-size:11px; color:var(--tag-text); background:var(--tag-bg); }
+    .tag-chip { display:inline-block; padding:3px 10px; border-radius:var(--radius-tag); font-size:11px; font-weight:400; margin:2px 4px 2px 0; cursor:pointer; background:var(--tag-bg); color:var(--tag-text); }
+    .tag-chip.selected { box-shadow:inset 0 0 0 1px var(--brand); color:var(--brand); }
+    .entry-tag { font-size:11px; color:var(--brand); background:var(--brand-light); padding:2px 8px; border-radius:var(--radius-tag); }
+
+    /* 列表项 */
+    .list-item { display:flex; justify-content:space-between; align-items:center;
+      padding:12px 0; font-size:13px; color:var(--body); border-bottom:1px solid var(--border);
+    }
+    .list-item:last-child { border-bottom:none; }
+    .list-item:active { background:var(--tag-bg); }
+
+    /* 空状态 */
+    .empty-state { text-align:center; padding:40px 20px; }
+    .empty-icon { font-size:48px; color:var(--hint); margin-bottom:12px; }
+    .empty-text { font-size:14px; color:var(--muted); }
+
+    /* 统计数字 */
+    .stat-row { display:flex; justify-content:space-around; margin:12px 0; }
+    .stat-item { text-align:center; }
+    .stat-num { font-size:22px; font-weight:600; color:var(--brand); }
+    .stat-label { font-size:11px; color:var(--muted); margin-top:2px; }
+
+    /* ========== 账本 ========== */
+    .record-form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+    .record-list { max-height:180px; overflow-y:auto; }
+    .record-item { display:flex; justify-content:space-between; align-items:center;
+      padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; color:var(--body);
+    }
+    .record-item:last-child { border-bottom:none; }
+    .record-tag { padding:2px 8px; border-radius:var(--radius-tag); font-size:11px; margin-right:6px; font-weight:400; }
+    .tag-expense { background:#F5E5E5; color:var(--error); }
+    .tag-income { background:#E5F0E5; color:var(--success); }
+    .pie-chart { width:150px; height:150px; border-radius:50%; margin:14px auto; position:relative; }
+    .pie-legend { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; font-size:11px; color:var(--muted); }
+    .budget-bar-wrap { background:#F0F0F0; border-radius:10px; height:14px; overflow:hidden; margin:8px 0; }
+    .budget-bar-fill { height:100%; border-radius:10px; transition:width 0.4s, background 0.4s; }
+    .budget-bar-fill.safe { background:var(--success); }
+    .budget-bar-fill.warn { background:var(--warn); }
+    .budget-bar-fill.danger { background:var(--error); }
+    .budget-text { font-size:12px; color:var(--muted); text-align:center; margin-top:4px; }
+    .streak-badge { display:inline-flex; align-items:center; gap:4px; background:var(--warn); color:var(--title); padding:4px 10px; border-radius:var(--radius-tag); font-size:12px; font-weight:600; }
+    .insight-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
+    .insight-cell { background:var(--tag-bg); border-radius:var(--radius-card); padding:10px 6px; text-align:center; }
+    .insight-val { font-size:16px; font-weight:600; color:var(--title); }
+    .insight-label { font-size:10px; color:var(--muted); margin-top:2px; }
+    .insight-up { color:var(--success); }
+    .insight-down { color:var(--error); }
+    .rank-list { margin-top:8px; }
+    .rank-item { display:flex; align-items:center; gap:8px; padding:6px 4px; font-size:13px; color:var(--body); }
+    .rank-bar { flex:1; height:8px; background:#F0F0F0; border-radius:4px; overflow:hidden; }
+    .rank-bar-fill { height:100%; border-radius:4px; background:var(--brand); }
+    .rank-num { width:18px; text-align:center; font-weight:600; color:var(--muted); font-size:12px; }
+    .cat-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; background:var(--brand-light); color:var(--brand); }
+    .cat-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:var(--radius-tag); font-size:11px; font-weight:400; background:var(--tag-bg); color:var(--tag-text); }
+    .cat-chip.selected { background:var(--brand-light); color:var(--brand); border:1px solid var(--brand); }
+    .export-row { display:flex; gap:8px; align-items:center; margin-top:8px; }
+    .setting-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+    .setting-row:last-child { border-bottom:none; }
+    .toggle { width:44px; height:24px; background:#E0E0E0; border-radius:12px; position:relative; cursor:pointer; transition:background 0.3s; flex-shrink:0; }
+    .toggle.active { background:var(--brand); }
+    .toggle::after { content:''; position:absolute; width:20px; height:20px; background:var(--card); border-radius:50%; top:2px; left:2px; transition:left 0.3s; box-shadow:0 1px 3px rgba(0,0,0,0.15); }
+    .toggle.active::after { left:22px; }
+    .cat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:10px 0; }
+    .cat-grid-item { text-align:center; padding:8px 4px; border-radius:var(--radius-card); cursor:pointer; border:2px solid transparent; transition:all 0.2s; background:var(--tag-bg); color:var(--body); }
+    .cat-grid-item.selected { border-color:var(--brand); background:var(--brand-light); color:var(--brand); }
+    .overlay-panel { background:var(--card); border-radius:var(--radius-modal) var(--radius-modal) 0 0; padding:20px; max-height:80vh; overflow-y:auto; border:1px solid var(--border); border-bottom:none; }
+
+    /* ========== 跳舞 ========== */
+    .dance-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .dance-card { background:var(--card); border-radius:var(--radius-card); overflow:hidden;
+      border:1px solid var(--border); cursor:pointer; transition:all 0.2s; position:relative;
+    }
+    .dance-card:active { transform:scale(0.98); }
+    .dance-cover { width:100%; height:130px; background:var(--brand-light);
+      display:flex; align-items:center; justify-content:center; font-size:40px;
+      overflow:hidden; position:relative; color:var(--brand);
+    }
+    .dance-cover img { width:100%; height:100%; object-fit:cover; }
+    .dance-info { padding:10px 12px 12px; }
+    .dance-name { font-weight:600; font-size:14px; color:var(--title); line-height:1.3; }
+    .dance-meta { font-size:11px; color:var(--muted); margin-top:4px; }
+    .dance-count-badge {
+      position:absolute; top:8px; right:8px;
+      background:rgba(0,0,0,0.5); color:#fff; padding:3px 8px;
+      border-radius:var(--radius-tag); font-size:11px; font-weight:600;
+    }
+    .dance-delete {
+      position:absolute; top:8px; left:8px; width:26px; height:26px;
+      background:var(--error); color:#fff; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; cursor:pointer; border:none; padding:0; z-index:2;
+    }
+    .dance-detail-media { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:12px 0; }
+    .media-item { border-radius:var(--radius-card); overflow:hidden; position:relative; background:var(--brand-light); aspect-ratio:1; }
+    .media-item img, .media-item video { width:100%; height:100%; object-fit:cover; }
+    .media-type-icon { position:absolute; top:6px; left:6px; background:rgba(0,0,0,0.5); color:#fff;
+      padding:2px 6px; border-radius:var(--radius-tag); font-size:10px; font-weight:600;
+    }
+    .dance-detail-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5);
+      display:none; align-items:center; justify-content:center; z-index:100;
+    }
+    .dance-detail-overlay.active { display:flex; }
+    .dance-detail-panel { background:var(--card); border-radius:var(--radius-modal); width:360px; max-height:780px;
+      overflow-y:auto; padding:20px; position:relative; border:1px solid var(--border);
+    }
+    .dance-detail-close { position:absolute; top:14px; right:14px; width:32px; height:32px;
+      background:var(--tag-bg); border-radius:50%; display:flex; align-items:center; justify-content:center;
+      cursor:pointer; font-size:18px; border:none; color:var(--muted);
+    }
+    .file-input { display:none; }
+    .file-label {
+      display:inline-block; padding:10px 18px; background:var(--brand-light);
+      border:2px dashed var(--brand); border-radius:var(--radius-card); color:var(--brand);
+      font-size:13px; cursor:pointer; text-align:center; width:100%; margin-bottom:10px;
+    }
+
+    /* ========== 语言打卡 ========== */
+    .lang-overview { text-align:center; padding:16px; }
+    .lang-flag-big { font-size:40px; }
+    .lang-progress-bar { width:100%; height:8px; background:#F0F0F0; border-radius:4px; margin:10px 0; overflow:hidden; }
+    .lang-progress-fill { height:100%; background:var(--brand); border-radius:4px; transition:width 0.4s; }
+    .lang-settings { display:flex; gap:8px; justify-content:center; margin:12px 0; flex-wrap:wrap; }
+    .lang-setting-btn { padding:8px 16px; border-radius:var(--radius-btn); border:1px solid var(--border); background:var(--card); color:var(--body); font-size:13px; font-weight:400; cursor:pointer; }
+    .lang-setting-btn.active { background:var(--brand); color:#fff; border-color:var(--brand); }
+    .drill-card { background:var(--card); border-radius:var(--radius-card); padding:16px; margin-bottom:12px; border:1px solid var(--border); }
+    .drill-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .drill-counter { font-size:13px; color:var(--muted); }
+    .drill-question { font-size:22px; font-weight:600; color:var(--title); text-align:center; margin:14px 0; line-height:1.4; }
+    .drill-sub { font-size:14px; color:var(--muted); text-align:center; margin-bottom:16px; }
+    .drill-options { display:flex; flex-direction:column; gap:10px; }
+    .drill-opt { padding:14px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-card); cursor:pointer; font-size:15px; transition:all 0.2s; text-align:center; color:var(--body); }
+    .drill-opt:hover { border-color:var(--brand); }
+    .drill-opt.correct { background:#E5F0E5; border-color:var(--success); color:var(--success); }
+    .drill-opt.wrong { background:#F5E5E5; border-color:var(--error); color:var(--error); }
+    .drill-input { width:100%; padding:14px; border:1px solid var(--border); border-radius:var(--radius-card); font-size:16px; text-align:center; outline:none; color:var(--body); }
+    .drill-input:focus { border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-light); }
+    .drill-feedback { text-align:center; font-size:16px; font-weight:600; margin:12px 0; min-height:24px; color:var(--muted); }
+    .drill-next-btn { width:100%; margin-top:10px; }
+    .speak-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:var(--brand); color:#fff; border:none; border-radius:var(--radius-btn); font-size:14px; cursor:pointer; }
+    .wordbook-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+    .wordbook-item { background:var(--card); border-radius:var(--radius-card); padding:10px; font-size:13px; border:1px solid var(--border); }
+    .wordbook-word { font-weight:600; color:var(--title); font-size:15px; }
+    .wordbook-mean { color:var(--muted); font-size:12px; margin-top:2px; }
+    .wordbook-pron { color:var(--hint); font-size:11px; }
+    .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+    .calendar-day { padding:8px 2px; border-radius:var(--radius-btn); font-size:12px; color:var(--body); }
+    .calendar-day.checked { background:var(--brand); color:#fff; font-weight:600; }
+    .calendar-day.today { border:1px solid var(--brand); }
+    .calendar-day.empty { color:var(--hint); }
+    .lang-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:100; }
+    .lang-overlay.active { display:flex; }
+    .lang-result-panel { background:var(--card); border-radius:var(--radius-modal); width:360px; max-height:800px; overflow-y:auto; padding:24px; position:relative; border:1px solid var(--border); }
+    .lang-result-close { position:absolute; top:14px; right:14px; width:32px; height:32px; background:var(--tag-bg); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; border:none; color:var(--muted); }
+    .result-score { font-size:48px; font-weight:600; color:var(--brand); text-align:center; }
+    .result-stars { text-align:center; font-size:28px; margin:8px 0; }
+    .mistake-item { display:flex; justify-content:space-between; padding:8px; background:var(--tag-bg); border-radius:var(--radius-card); margin-bottom:6px; font-size:13px; color:var(--body); }
+    .back-btn { font-size:28px; color:var(--brand); cursor:pointer; padding:0 8px; font-weight:300; line-height:1; }
+
+    /* 语言首页卡片 */
+    .lang-home-card { display:flex; align-items:center; gap:14px; background:var(--card); border-radius:var(--radius-card); padding:16px; margin-bottom:12px; cursor:pointer; transition:all 0.2s; border:1px solid var(--border); }
+    .lang-home-card:active { border-color:var(--brand); transform:scale(0.98); }
+    .lang-home-flag { font-size:36px; flex-shrink:0; }
+    .lang-home-info { flex:1; }
+    .lang-home-name { font-size:18px; font-weight:600; color:var(--title); }
+    .lang-home-desc { font-size:12px; color:var(--muted); margin:2px 0 6px; }
+    .lang-home-stats { font-size:11px; color:var(--muted); }
+    .lang-home-arrow { font-size:24px; color:var(--hint); flex-shrink:0; font-weight:300; }
+
+    /* ========== 开心成长日记 ========== */
+    .album-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .album-card { background:var(--card); border-radius:var(--radius-card); overflow:hidden;
+      border:1px solid var(--border); transition:all 0.2s; position:relative;
+    }
+    .album-card:active { transform:scale(0.98); }
+    .album-img { width:100%; background:var(--brand-light);
+      display:flex; align-items:center; justify-content:center; font-size:40px; overflow:hidden;
+      color:var(--brand);
+    }
+    .album-img img { width:100%; height:100%; object-fit:cover; }
+    .album-text { padding:10px; font-size:12px; color:var(--body); line-height:1.5; }
+    .album-date { font-size:10px; color:var(--muted); margin-top:4px; }
+    .album-add { border:2px dashed var(--brand); background:var(--brand-light);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height:130px; cursor:pointer; color:var(--brand); font-size:13px; gap:6px; border-radius:var(--radius-card);
+    }
+    .album-add:hover { background:var(--brand-light); opacity:0.8; }
+    /* 多照片网格 */
+    .photo-grid { display:grid; gap:4px; width:100%; }
+    .photo-grid.grid-1 { grid-template-columns:1fr; }
+    .photo-grid.grid-2 { grid-template-columns:repeat(2,1fr); }
+    .photo-grid.grid-3 { grid-template-columns:repeat(3,1fr); }
+    .photo-grid.grid-4 { grid-template-columns:repeat(2,1fr); }
+    .photo-grid.grid-5,.photo-grid.grid-6,.photo-grid.grid-7,.photo-grid.grid-8,.photo-grid.grid-9 { grid-template-columns:repeat(3,1fr); }
+    .photo-grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:var(--radius-btn); }
+    .photo-grid.grid-1 img { aspect-ratio:4/3; }
+    /* 时间轴 */
+    .timeline-month { font-size:15px; font-weight:600; color:var(--title); margin:16px 0 10px; padding-left:8px; border-left:3px solid var(--brand); }
+    .timeline-entries { display:flex; flex-direction:column; gap:10px; }
+    /* 模板按钮 */
+    .template-row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+    .template-btn { padding:6px 14px; border-radius:var(--radius-btn); border:1px solid var(--border); background:var(--card); font-size:12px; color:var(--body); cursor:pointer; transition:all 0.2s; }
+    .template-btn.active { background:var(--brand-light); border-color:var(--brand); color:var(--brand); }
+    /* 照片预览 */
+    .preview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:10px 0; }
+    .preview-grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:var(--radius-btn); }
+    .preview-item { position:relative; }
+    .preview-del { position:absolute; top:2px; right:2px; width:20px; height:20px; background:var(--error); color:#fff; border:none; border-radius:50%; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    /* 统计 */
+    .cloud-wrap { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:10px 0; }
+    .cloud-tag { padding:4px 12px; border-radius:var(--radius-btn); font-weight:400; background:var(--brand-light); color:var(--brand); font-size:12px; }
+    .entry-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+
+    /* PDF打印区域 */
+    #print-area { display:none; }
+    @media print {
+      body * { visibility:hidden; }
+      #print-area, #print-area * { visibility:visible; }
+      #print-area { display:block; position:absolute; left:0; top:0; width:100%; }
+      .phone-frame { box-shadow:none; border-radius:0; width:100%; height:auto; overflow:visible; }
+      .sidebar { display:none; }
+      .main-content { padding:20px; }
+    }
+
+    /* ========== 生活日程 ========== */
+    .schedule-item { display:flex; align-items:center; gap:10px; padding:12px;
+      background:var(--card); border-radius:var(--radius-card); margin-bottom:8px;
+      border:1px solid var(--border);
+    }
+    .schedule-time { font-size:16px; font-weight:600; color:var(--brand); width:48px; flex-shrink:0; }
+    .schedule-content { flex:1; min-width:0; }
+    .schedule-title { font-weight:600; font-size:14px; color:var(--title); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .schedule-note { font-size:12px; color:var(--muted); }
+    .schedule-cat { padding:2px 8px; border-radius:var(--radius-tag); font-size:10px; font-weight:600; flex-shrink:0; background:var(--brand-light); color:var(--brand); }
+    .sch-status { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; background:var(--card); }
+    .sch-status.done { background:var(--brand); border-color:var(--brand); color:#fff; }
+    .schedule-stats { display:flex; gap:10px; margin-bottom:12px; }
+    .stat-box { flex:1; text-align:center; background:var(--card); border-radius:var(--radius-card); padding:10px 4px; border:1px solid var(--border); }
+    .stat-val { font-size:18px; font-weight:600; color:var(--title); }
+    .stat-label { font-size:11px; color:var(--muted); margin-top:2px; }
+    .cal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .cal-header button { background:none; border:none; font-size:22px; color:var(--brand); cursor:pointer; padding:4px 12px; }
+    .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:11px; color:var(--muted); margin-bottom:6px; }
+    .cal-days { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    .cal-day { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:var(--radius-btn); cursor:pointer; font-size:13px; position:relative; color:var(--body); }
+    .cal-day:hover { background:var(--brand-light); }
+    .cal-day.today { background:var(--brand-light); font-weight:600; }
+    .cal-day.selected { background:var(--brand); color:#fff; }
+    .cal-day.other-month { color:var(--hint); }
+    .cal-dots { display:flex; gap:2px; margin-top:2px; }
+    .cal-dot { width:4px; height:4px; border-radius:50%; background:var(--error); }
+    .day-events-title { font-weight:600; font-size:14px; color:var(--title); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+
+    /* ========== 小小的日记 ========== */
+    .mood-selector { display:flex; justify-content:center; gap:18px; margin:14px 0; }
+    .mood-btn { font-size:28px; width:44px; height:44px; border-radius:var(--radius-btn); background:var(--card); border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+    .mood-btn:hover { transform:scale(1.1); }
+    .mood-btn.selected { border-color:var(--brand); background:var(--brand-light); }
+    .mood-group-title { font-size:11px; color:var(--muted); margin:8px 0 4px; font-weight:600; }
+    .mood-group { display:flex; gap:6px; flex-wrap:wrap; }
+    .diary-entry { background:var(--card); border-radius:var(--radius-card); padding:16px; margin-bottom:10px; border:1px solid var(--border); position:relative; }
+    .diary-date { font-size:11px; color:var(--muted); margin-bottom:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .diary-text { font-size:15px; color:var(--body); line-height:1.7; }
+    .diary-mood { font-size:22px; }
+    .diary-tags { display:flex; gap:4px; margin-top:6px; flex-wrap:wrap; }
+    .template-tabs { display:flex; gap:6px; margin-bottom:10px; }
+    .template-tab { flex:1; text-align:center; padding:8px; border-radius:var(--radius-btn); font-size:12px; cursor:pointer; border:1px solid var(--border); background:var(--card); color:var(--body); }
+    .template-tab.active { background:var(--brand-light); border-color:var(--brand); color:var(--brand); font-weight:600; }
+    .template-hint { font-size:12px; color:var(--muted); margin-bottom:8px; padding:8px; background:var(--brand-light); border-radius:var(--radius-btn); }
+    .lock-overlay { position:fixed; inset:0; background:var(--card); z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .lock-dots { display:flex; gap:12px; margin:20px 0; }
+    .lock-dot { width:14px; height:14px; border-radius:50%; border:1px solid var(--border); background:var(--card); transition:all 0.2s; }
+    .lock-dot.filled { background:var(--brand); border-color:var(--brand); }
+    .lock-keypad { display:grid; grid-template-columns:repeat(3,60px); gap:12px; }
+    .lock-key { width:60px; height:60px; border-radius:50%; background:var(--tag-bg); border:none; font-size:20px; color:var(--body); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .lock-key:active { background:var(--brand-light); }
+    .review-card { background:var(--brand-light); border-radius:var(--radius-card); padding:16px; margin-bottom:12px; border:1px solid var(--border); }
+    .review-title { font-size:13px; font-weight:600; color:var(--brand); margin-bottom:8px; }
+    .trend-bar { display:flex; align-items:flex-end; gap:4px; height:80px; padding:10px 0; }
+    .trend-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .trend-col { width:100%; border-radius:4px 4px 0 0; min-height:4px; }
+    .trend-label { font-size:9px; color:var(--muted); }
+    .export-panel { background:var(--card); border-radius:var(--radius-card); padding:16px; margin-bottom:12px; border:1px solid var(--border); }
+
+    /* 滚动条美化 */
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+  </style>
+</head>
+<body>
+<div class="phone-frame">
+  <!-- 左侧导航栏 -->
+  <div class="sidebar">
+    <div class="nav-item avatar-item active" data-page="home">
+      <div class="nav-icon">🌿</div>
+      <div class="nav-label">小小的<br>工作台</div>
+    </div>
+    <div class="nav-item" data-page="account">
+      <div class="nav-icon">💰</div>
+      <div class="nav-label">记账</div>
+    </div>
+    <div class="nav-item" data-page="dance">
+      <div class="nav-icon">💃</div>
+      <div class="nav-label">跳舞</div>
+    </div>
+    <div class="nav-item" data-page="language">
+      <div class="nav-icon">🌍</div>
+      <div class="nav-label">语言</div>
+    </div>
+    <div class="nav-item" data-page="schedule">
+      <div class="nav-icon">📅</div>
+      <div class="nav-label">日程</div>
+    </div>
+    <div class="nav-item" data-page="album">
+      <div class="nav-icon">📷</div>
+      <div class="nav-label">开心</div>
+    </div>
+    <div class="nav-item" data-page="diary">
+      <div class="nav-icon">🌙</div>
+      <div class="nav-label">日记</div>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <div class="main-content">
+
+    <!-- ====== 首页/欢迎 ====== -->
+    <div class="page active" id="page-home">
+      <div style="text-align:center;padding:60px 20px;">
+        <div style="font-size:64px;margin-bottom:16px;">🌿</div>
+        <div style="font-size:24px;font-weight:800;color:var(--brand);margin-bottom:8px;">小小的工作台</div>
+        <div style="font-size:14px;color:var(--muted);line-height:1.8;">
+          记账 · 跳舞 · 语言<br>
+          日程 · 开心 · 日记
+        </div>
+        <div style="margin-top:40px;font-size:12px;color:var(--hint);">
+          点击左侧导航开始使用
+        </div>
+      </div>
+          </div>
+
+    <!-- ====== 账本 ====== -->
+    <div class="page" id="page-account">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="page-title-icon">💰</span>
+          <span class="page-title">小猪记账本</span>
+        </div>
+        <div class="page-header-actions">
+          <span class="streak-badge" id="account-streak">🔥 0 天</span>
+        </div>
+      </div>
+
+      <!-- 概览 + 预算 -->
+      <div class="card">
+        <div style="display:flex;gap:12px;margin-bottom:8px;">
+          <div style="flex:1;text-align:center;">
+            <div style="font-size:11px;color:var(--muted);">本月支出</div>
+            <div style="font-size:20px;font-weight:800;color:var(--error);" id="total-expense">¥0</div>
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="font-size:11px;color:var(--muted);">本月收入</div>
+            <div style="font-size:20px;font-weight:800;color:var(--success);" id="total-income">¥0</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0 4px;">
+          <span style="font-size:12px;color:var(--muted);">本月预算</span>
+          <span style="font-size:12px;color:var(--title);font-weight:700;" id="budget-info">¥0 / ¥3000</span>
+        </div>
+        <div class="budget-bar-wrap">
+          <div class="budget-bar-fill safe" id="budget-bar" style="width:0%"></div>
+        </div>
+        <div class="budget-text" id="budget-text">还没有设置预算</div>
+        <div class="pie-chart" id="pie-chart"></div>
+        <div class="pie-legend" id="pie-legend"></div>
+      </div>
+
+      <!-- 数据洞察 -->
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:6px;color:var(--title);">📊 本月洞察</div>
+        <div class="insight-grid" id="insight-grid">
+          <div class="insight-cell"><div class="insight-val">-</div><div class="insight-label">日均支出</div></div>
+          <div class="insight-cell"><div class="insight-val">-</div><div class="insight-label">环比上月</div></div>
+          <div class="insight-cell"><div class="insight-val">-</div><div class="insight-label">记账天数</div></div>
+        </div>
+        <div class="rank-list" id="rank-list"></div>
+      </div>
+
+      <!-- 记一笔 -->
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">记一笔（10秒搞定）</div>
+        <div class="record-form">
+          <select id="rec-type"><option value="expense">支出</option><option value="income">收入</option></select>
+          <input class="input" type="number" id="rec-amount" placeholder="金额" style="margin-bottom:0;flex:1;">
+          <select id="rec-cat"></select>
+        </div>
+        <input class="input" id="rec-note" placeholder="备注（可选）">
+        <button class="btn" onclick="addRecord()" style="width:100%;">+ 记一笔</button>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">⚙️ 更多操作</div>
+        <div class="export-row">
+          <select id="export-month" style="padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--card);font-size:13px;flex:1;"></select>
+          <button class="btn" onclick="exportCSV()" style="white-space:nowrap;">📥 导出CSV</button>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <button class="btn" onclick="openCatManager()" style="flex:1;background:var(--brand);">🏷️ 分类管理</button>
+          <button class="btn" onclick="openBudgetSetting()" style="flex:1;background:var(--warn);color:var(--title);">💡 预算设置</button>
+        </div>
+      </div>
+
+      <div class="card record-list" id="record-list"></div>
+      
+      <!-- 分类管理弹窗 -->
+      <div class="lang-overlay" id="cat-overlay" onclick="if(event.target===this)closeCatManager()">
+        <div class="overlay-panel" style="position:absolute;bottom:0;left:0;right:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:16px;color:var(--title);">🏷️ 分类管理</div>
+            <button onclick="closeCatManager()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;">✕</button>
+          </div>
+          <div id="cat-manager-list"></div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+            <div style="font-weight:600;font-size:13px;color:var(--title);margin-bottom:8px;">添加新分类</div>
+            <input class="input" id="new-cat-name" placeholder="分类名称" style="margin-bottom:8px;">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">选择图标</div>
+            <div class="cat-grid" id="cat-icon-grid"></div>
+            <div style="font-size:12px;color:var(--muted);margin:6px 0;">选择颜色</div>
+            <div class="cat-grid" id="cat-color-grid"></div>
+            <button class="btn" onclick="addCategory()" style="width:100%;margin-top:8px;">+ 添加分类</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 预算设置弹窗 -->
+      <div class="lang-overlay" id="budget-overlay" onclick="if(event.target===this)closeBudgetSetting()">
+        <div class="overlay-panel" style="position:absolute;bottom:0;left:0;right:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:16px;color:var(--title);">💡 预算设置</div>
+            <button onclick="closeBudgetSetting()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;">✕</button>
+          </div>
+          <div class="setting-row">
+            <span style="font-size:14px;color:var(--title);">月度预算总额</span>
+            <input class="input" type="number" id="budget-input" placeholder="例如 3000" style="width:120px;margin-bottom:0;text-align:right;">
+          </div>
+          <div class="setting-row">
+            <span style="font-size:14px;color:var(--title);">每日记账提醒</span>
+            <div class="toggle" id="reminder-toggle" onclick="toggleReminder()"></div>
+          </div>
+          <button class="btn" onclick="saveBudget()" style="width:100%;margin-top:12px;">保存设置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== 跳舞 ====== -->
+    <div class="page" id="page-dance">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="page-title-icon">💃</span>
+          <span class="page-title">跳舞记录</span>
+        </div>
+      </div>
+      <div id="dance-list"></div>
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">添加新舞蹈</div>
+        <label class="file-label" onclick="document.getElementById('dance-cover-input').click()">
+          📷 上传封面图
+        </label>
+        <input type="file" id="dance-cover-input" class="file-input" accept="image/*" onchange="onDanceCoverChange(this)">
+        <input class="input" id="dance-name" placeholder="舞蹈名称，例如：韩舞 Lovesick Girls">
+        <button class="btn btn-pink" onclick="addDance()" style="width:100%;">+ 添加舞蹈</button>
+      </div>
+
+      <!-- 舞蹈详情弹窗 -->
+      <div class="dance-detail-overlay" id="dance-overlay" onclick="if(event.target===this)closeDanceDetail()">
+        <div class="dance-detail-panel">
+          <button class="dance-detail-close" onclick="closeDanceDetail()">✕</button>
+          <div id="dance-detail-content"></div>
+          <div style="margin-top:16px;">
+            <label class="file-label" onclick="document.getElementById('dance-media-input').click()">
+              📷🎬 上传照片或视频
+            </label>
+            <input type="file" id="dance-media-input" class="file-input" accept="image/*,video/*" multiple onchange="onDanceMediaChange(this)">
+          </div>
+        </div>
+      </div>
+          </div>
+
+    <!-- ====== 语言打卡首页 ====== -->
+    <div class="page" id="page-language">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="page-title-icon">🌍</span>
+          <span class="page-title">语言打卡</span>
+        </div>
+      </div>
+      <div id="lang-home-content"></div>
+          </div>
+
+    <!-- ====== 韩语详情页 ====== -->
+    <div class="page" id="page-korean">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="back-btn" onclick="backToLangHome()">‹</span>
+          <span class="page-title-icon">🇰🇷</span>
+          <span class="page-title">韩语打卡</span>
+        </div>
+      </div>
+      <div id="korean-detail-panel"></div>
+          </div>
+
+    <!-- ====== 英语详情页 ====== -->
+    <div class="page" id="page-english">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="back-btn" onclick="backToLangHome()">‹</span>
+          <span class="page-title-icon">🇬🇧</span>
+          <span class="page-title">英语打卡</span>
+        </div>
+      </div>
+      <div id="english-detail-panel"></div>
+          </div>
+
+    <!-- ====== 西语详情页 ====== -->
+    <div class="page" id="page-spanish">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="back-btn" onclick="backToLangHome()">‹</span>
+          <span class="page-title-icon">🇪🇸</span>
+          <span class="page-title">西语打卡</span>
+        </div>
+      </div>
+      <div id="spanish-detail-panel"></div>
+          </div>
+
+    <!-- 打卡结果弹窗（全局） -->
+    <div class="lang-overlay" id="lang-overlay" onclick="if(event.target===this)closeLangResult()">
+      <div class="lang-result-panel">
+        <button class="lang-result-close" onclick="closeLangResult()">✕</button>
+        <div id="lang-result-content"></div>
+      </div>
+    </div>
+
+    <!-- ====== 开心成长日记 ====== -->
+    <div class="page" id="page-album">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="page-title-icon">📷</span>
+          <span class="page-title">开心成长日记</span>
+        </div>
+      </div>
+
+      <!-- 统计卡片 -->
+      <div class="card" id="album-stats"></div>
+
+      <!-- 标签云 -->
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:8px;color:var(--title);font-size:14px;">🏷️ 标签筛选</div>
+        <div class="cloud-wrap" id="album-tag-cloud"></div>
+      </div>
+
+      <!-- 月份筛选 -->
+      <div class="card">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:13px;color:var(--muted);flex-shrink:0;">月份：</span>
+          <select id="album-month-filter" class="input" style="margin-bottom:0;flex:1;" onchange="renderAlbum()"></select>
+          <button class="btn" onclick="resetAlbumFilter()" style="white-space:nowrap;padding:8px 12px;font-size:12px;">全部</button>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn btn-blue" onclick="openAlbumForm()" style="flex:1;">📷 写日记</button>
+        <button class="btn" onclick="openAlbumExport()" style="flex:1;">📄 导出PDF</button>
+      </div>
+
+      <!-- 添加日记表单 -->
+      <div class="card" id="album-form" style="display:none;">
+        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">记录美好瞬间</div>
+        <!-- 模板选择 -->
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">选择模板快速记录</div>
+        <div class="template-row">
+          <button class="template-btn" onclick="selectTemplate('food')" id="tpl-food">🍜 美食</button>
+          <button class="template-btn" onclick="selectTemplate('travel')" id="tpl-travel">✈️ 旅行</button>
+          <button class="template-btn" onclick="selectTemplate('family')" id="tpl-family">👶 亲子</button>
+          <button class="template-btn" onclick="selectTemplate('achievement')" id="tpl-achievement">🏆 成就</button>
+        </div>
+        <!-- 照片上传 -->
+        <label class="file-label" onclick="document.getElementById('album-photo-input').click()">
+          📷 上传照片（最多9张）
+        </label>
+        <input type="file" id="album-photo-input" class="file-input" accept="image/*" multiple onchange="onAlbumPhotoChange(this)">
+        <div id="album-preview-grid" class="preview-grid" style="display:none;"></div>
+        <textarea class="input" id="album-text" rows="3" placeholder="今天发生了什么开心的事？写一两句话..."></textarea>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">添加标签（空格分隔）</div>
+        <input class="input" id="album-tags" placeholder="#宝宝成长 #美食 #旅行 ..." style="margin-bottom:10px;">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-blue" onclick="saveAlbumEntry()" style="flex:1;">✨ 保存</button>
+          <button class="btn" onclick="closeAlbumForm()" style="flex:1;background:var(--tag-bg);color:var(--body);box-shadow:none;">取消</button>
+        </div>
+      </div>
+
+      <!-- 导出设置 -->
+      <div class="card" id="album-export" style="display:none;">
+        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">📄 PDF导出设置</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <select class="input" id="pdf-start-month" style="flex:1;margin-bottom:0;"></select>
+          <span style="align-self:center;color:var(--muted);">至</span>
+          <select class="input" id="pdf-end-month" style="flex:1;margin-bottom:0;"></select>
+        </div>
+        <input class="input" id="pdf-title" placeholder="封面标题（可选）" style="margin-bottom:10px;">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-blue" onclick="doExportPDF()" style="flex:1;">确认导出</button>
+          <button class="btn" onclick="document.getElementById('album-export').style.display='none'" style="flex:1;background:var(--tag-bg);color:var(--body);box-shadow:none;">取消</button>
+        </div>
+      </div>
+
+      <!-- 日记时间轴 -->
+      <div id="album-timeline"></div>
+          </div>
+
+    <!-- ====== 生活日程 ====== -->
+    <div class="page" id="page-schedule">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="page-title-icon">📅</span>
+          <span class="page-title">生活日程</span>
+        </div>
+      </div>
+
+      <!-- 今日统计 -->
+      <div class="card" id="schedule-stats"></div>
+
+      <!-- 日历视图 -->
+      <div class="card">
+        <div class="cal-header">
+          <button onclick="changeScheduleMonth(-1)">‹</button>
+          <span id="cal-month-label" style="font-weight:700;color:var(--title);">2026年7月</span>
+          <button onclick="changeScheduleMonth(1)">›</button>
+        </div>
+        <div id="cal-grid"></div>
+      </div>
+
+      <!-- 当日日程列表 -->
+      <div class="card">
+        <div class="day-events-title">
+          <span id="day-events-title">今日日程</span>
+          <button onclick="goToToday()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:3px 10px;font-size:11px;color:var(--brand);cursor:pointer;">今天</button>
+        </div>
+        <div id="day-events-list"></div>
+      </div>
+
+      <!-- 添加日程 -->
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">添加日程</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input class="input" type="date" id="sch-date" style="flex:1;margin-bottom:0;">
+          <input class="input" type="time" id="sch-time" style="flex:1;margin-bottom:0;">
+        </div>
+        <input class="input" id="sch-title" placeholder="日程名称">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <select class="input" id="sch-cat" style="flex:1;margin-bottom:0;"></select>
+          <select class="input" id="sch-repeat" style="flex:1;margin-bottom:0;">
+            <option value="none">不重复</option>
+            <option value="daily">每天</option>
+            <option value="workdays">工作日</option>
+            <option value="weekly">每周</option>
+            <option value="monthly">每月</option>
+          </select>
+        </div>
+        <select class="input" id="sch-remind" style="margin-bottom:10px;">
+          <option value="0">不提醒</option>
+          <option value="5">提前5分钟</option>
+          <option value="15">提前15分钟</option>
+        </select>
+        <button class="btn" onclick="addSchedule()" style="width:100%;">+ 添加</button>
+      </div>
+          </div>
+
+    <!-- ====== 静静日记 ====== -->
+    <div class="page" id="page-diary">
+      <!-- 应用锁覆盖层 -->
+      <div class="lock-overlay" id="diary-lock" style="display:none;">
+        <div style="font-size:48px;margin-bottom:10px;">🔒</div>
+        <div style="font-size:18px;font-weight:700;color:var(--title);margin-bottom:4px;">日记本已上锁</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;" id="lock-hint">请输入4位密码</div>
+        <div class="lock-dots" id="lock-dots"><div class="lock-dot"></div><div class="lock-dot"></div><div class="lock-dot"></div><div class="lock-dot"></div></div>
+        <div class="lock-keypad">
+          <button class="lock-key" onclick="pressLockKey(1)">1</button><button class="lock-key" onclick="pressLockKey(2)">2</button><button class="lock-key" onclick="pressLockKey(3)">3</button>
+          <button class="lock-key" onclick="pressLockKey(4)">4</button><button class="lock-key" onclick="pressLockKey(5)">5</button><button class="lock-key" onclick="pressLockKey(6)">6</button>
+          <button class="lock-key" onclick="pressLockKey(7)">7</button><button class="lock-key" onclick="pressLockKey(8)">8</button><button class="lock-key" onclick="pressLockKey(9)">9</button>
+          <button class="lock-key" onclick="clearLock()" style="font-size:14px;">清空</button><button class="lock-key" onclick="pressLockKey(0)">0</button><button class="lock-key" onclick="backLock()" style="font-size:14px;">⌫</button>
+        </div>
+        <button onclick="setupLock()" id="lock-setup-btn" style="margin-top:20px;background:none;border:none;color:var(--brand);font-size:13px;cursor:pointer;display:none;">设置密码</button>
+      </div>
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="page-title-icon">🌙</span>
+          <span class="page-title">小小的日记</span>
+        </div>
+        <div class="page-header-actions">
+          <button onclick="toggleDiaryLock()">🔒</button>
+          <button onclick="openDiaryExport()">📤</button>
+        </div>
+      </div>
+
+      <!-- 心情统计 -->
+      <div class="card" id="diary-stats"></div>
+
+      <!-- 回顾功能 -->
+      <div id="diary-review"></div>
+
+      <!-- 写日记 -->
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:8px;color:var(--title);">今天心情怎么样？</div>
+        <div id="mood-selector-area"></div>
+        <div style="font-size:12px;color:var(--muted);margin:8px 0 4px;">标签</div>
+        <input class="input" id="diary-tags-input" placeholder="#感恩 #反思 #记录 ..." style="margin-bottom:10px;">
+        <!-- 模板选择 -->
+        <div class="template-tabs">
+          <div class="template-tab active" onclick="selectDiaryTemplate('free')" id="tpl-tab-free">📝 自由</div>
+          <div class="template-tab" onclick="selectDiaryTemplate('gratitude')" id="tpl-tab-gratitude">🙏 感恩</div>
+          <div class="template-tab" onclick="selectDiaryTemplate('reflect')" id="tpl-tab-reflect">💭 反思</div>
+        </div>
+        <div class="template-hint" id="diary-template-hint">自由书写，记录任何你想写的内容</div>
+        <textarea class="input" id="diary-text" rows="4" placeholder="写下今天的心情..."></textarea>
+        <button class="btn" onclick="addDiary()" style="width:100%;">🌙 保存日记</button>
+      </div>
+
+      <!-- 导出设置 -->
+      <div class="export-panel" id="diary-export-panel" style="display:none;">
+        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">📤 导出日记</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <select class="input" id="diary-export-start" style="flex:1;margin-bottom:0;"></select>
+          <span style="align-self:center;color:var(--muted);">至</span>
+          <select class="input" id="diary-export-end" style="flex:1;margin-bottom:0;"></select>
+        </div>
+        <select class="input" id="diary-export-mood" style="margin-bottom:10px;">
+          <option value="all">全部心情</option>
+        </select>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-blue" onclick="doDiaryExport()" style="flex:1;">导出</button>
+          <button class="btn" onclick="document.getElementById('diary-export-panel').style.display='none'" style="flex:1;background:var(--tag-bg);color:var(--body);box-shadow:none;">取消</button>
+        </div>
+      </div>
+
+      <div id="diary-list"></div>
+          </div>
+
+  </div>
+</div>
+
+<!-- PDF打印区域 -->
+<div id="print-area">
+  <div style="padding:40px; font-family:sans-serif; color:#333;">
+    <h1 style="text-align:center; color:var(--brand); margin-bottom:30px;">🌿 开心成长日记</h1>
+    <div id="print-album-content"></div>
+  </div>
+</div>
+
+<script>
+// ==================== 工具函数 ====================
+const LS = {
+  get:(k,def)=>{ try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;} },
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+};
+function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function nowTime(){ const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function fmtDate(d){ return new Date(d).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'}); }
+
+// ==================== 导航 & Tab ====================
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',function(){
+    const tabName=this.dataset.tab;
+    this.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    this.classList.add('active');
+    const parent=this.closest('.page');
+    parent.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.dataset.tabContent===tabName));
+  });
+});
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click',function(){
+    const pageName=this.dataset.page;
+    if(!pageName) return;
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    const target=document.getElementById('page-'+pageName);
+    if(target) target.classList.add('active');
+  });
+});
+
+// ==================== 账本 ====================
+const DEFAULT_CATS=[
+  {name:'餐饮',icon:'🍜',color:'#E07A6B'},{name:'交通',icon:'🚗',color:'#6B95A8'},
+  {name:'购物',icon:'🛍️',color:'#9B8BB4'},{name:'娱乐',icon:'🎮',color:'#C4A265'},
+  {name:'护肤',icon:'💄',color:'#D47A8E'},{name:'跳舞',icon:'💃',color:'#8AAA7B'},
+  {name:'其他',icon:'📦',color:'#8d6e63'}
+];
+const CAT_ICONS=['🍜','🚗','🛍️','🎮','💄','💃','📦','🏠','📚','💊','🐱','🌿','☕','🍰','✈️','🎁','💻','👗','🎵','🍎'];
+const CAT_COLORS=['#E07A6B','#9B8BB4','#6B95A8','#8AAA7B','#C4A265','#A68B6B','#D47A8E','#6BAAAA','#9B9B9B','#7A8BB4'];
+let selectedCatIcon=CAT_ICONS[0],selectedCatColor=CAT_COLORS[0];
+function getCategories(){return LS.get('account_categories',DEFAULT_CATS);}
+
+function renderAccount(){
+  const records=LS.get('account_records',[]),cats=getCategories();
+  const thisMonth=new Date().getMonth(),thisYear=new Date().getFullYear();
+  const monthRecords=records.filter(r=>{const d=new Date(r.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  let income=0,expense=0;const catMap={};
+  monthRecords.forEach(r=>{if(r.type==='income')income+=r.amount;else{expense+=r.amount;catMap[r.cat]=(catMap[r.cat]||0)+r.amount;}});
+  document.getElementById('total-income').textContent='¥'+income;
+  document.getElementById('total-expense').textContent='¥'+expense;
+  const budget=LS.get('account_budget',3000);
+  const pct=budget>0?Math.min(expense/budget*100,100):0;
+  const bar=document.getElementById('budget-bar');
+  bar.style.width=pct+'%';
+  bar.className='budget-bar-fill '+(pct>=100?'danger':pct>=80?'warn':'safe');
+  document.getElementById('budget-info').textContent='¥'+expense+' / ¥'+budget;
+  document.getElementById('budget-text').textContent=pct>=100?'⚠️ 已超支！注意控制消费':pct>=80?'🔶 预算即将用完':'✅ 预算充足';
+  const catEntries=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  const totalCat=catEntries.reduce((s,[,v])=>s+v,0);
+  if(totalCat>0){
+    let gradStr='',acc=0;
+    catEntries.forEach(([cat,val],i)=>{const c=cats.find(x=>x.name===cat);const col=c?c.color:['#E07A6B','#9B8BB4','#6B95A8','#8AAA7B','#C4A265','#A68B6B'][i%6];const p=val/totalCat*100;gradStr+=`${col} ${acc}% ${acc+p}%,`;acc+=p;});
+    document.getElementById('pie-chart').style.background=`conic-gradient(${gradStr.slice(0,-1)})`;
+    document.getElementById('pie-legend').innerHTML=catEntries.map(([cat,val],i)=>{const c=cats.find(x=>x.name===cat);const col=c?c.color:'#9B9B9B';return`<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${col};margin-right:4px;"></span>${cat} ¥${val}</span>`;}).join('');
+  }else{
+    document.getElementById('pie-chart').style.background='var(--tag-bg)';
+    document.getElementById('pie-legend').innerHTML='<span style="color:var(--muted);">还没有支出记录</span>';
+  }
+  renderInsights(records,expense);
+  renderRank(catEntries,totalCat,cats);
+  const catSelect=document.getElementById('rec-cat');
+  catSelect.innerHTML=cats.map(c=>`<option value="${c.name}">${c.icon} ${c.name}</option>`).join('');
+  const monthSet=new Set(records.map(r=>r.date.slice(0,7)));
+  const monthArr=Array.from(monthSet).sort().reverse();
+  const exportSel=document.getElementById('export-month');
+  exportSel.innerHTML=monthArr.length?monthArr.map(m=>`<option value="${m}">${m}</option>`).join('')+'<option value="all">全部月份</option>':'<option value="all">全部月份</option>';
+  document.getElementById('account-streak').textContent='🔥 '+calcAccountStreak(records)+' 天';
+  const listHtml=records.slice(-20).reverse().map((r,i)=>{const origIdx=records.length-1-i;const c=cats.find(x=>x.name===r.cat);const chip=c?`<span class="cat-chip" style="background:${c.color}22;color:${c.color};">${c.icon} ${r.cat}</span>`:r.cat;return`<div class="record-item"><div style="display:flex;align-items:center;gap:6px;">${chip} ${r.note||''}<span style="font-size:11px;color:var(--hint);">${r.date}</span></div><div style="display:flex;align-items:center;gap:10px;"><div style="font-weight:700;color:${r.type==='income'?'var(--success)':'var(--error)'}">${r.type==='income'?'+':'-'}¥${r.amount}</div><button onclick="deleteRecord(${origIdx})" style="background:none;border:none;font-size:16px;color:var(--error);cursor:pointer;padding:2px 6px;flex-shrink:0;">🗑</button></div></div>`;}).join('');
+  document.getElementById('record-list').innerHTML=listHtml||'<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">还没有记账记录</div>';
+}
+
+function renderInsights(records,thisExpense){
+  const thisMonth=new Date().getMonth(),thisYear=new Date().getFullYear();
+  const lastMonth=thisMonth===0?11:thisMonth-1,lastYear=thisMonth===0?thisYear-1:thisYear;
+  const lastExpense=records.filter(r=>{const d=new Date(r.date);return d.getMonth()===lastMonth&&d.getFullYear()===lastYear&&r.type==='expense';}).reduce((s,r)=>s+r.amount,0);
+  const mom=lastExpense>0?((thisExpense-lastExpense)/lastExpense*100).toFixed(1):0;
+  const momClass=thisExpense>lastExpense?'insight-up':'insight-down';
+  const momSign=thisExpense>lastExpense?'+':'';
+  const dayCount=new Set(records.filter(r=>{const d=new Date(r.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;}).map(r=>r.date)).size;
+  const daysInMonth=new Date(thisYear,thisMonth+1,0).getDate();
+  const dailyAvg=dayCount>0?(thisExpense/dayCount).toFixed(1):'0';
+  document.getElementById('insight-grid').innerHTML=`<div class="insight-cell"><div class="insight-val">¥${dailyAvg}</div><div class="insight-label">日均支出</div></div><div class="insight-cell"><div class="insight-val ${momClass}">${momSign}${mom}%</div><div class="insight-label">环比上月</div></div><div class="insight-cell"><div class="insight-val">${dayCount}/${daysInMonth}</div><div class="insight-label">记账天数</div></div>`;
+}
+
+function renderRank(catEntries,totalCat,cats){
+  if(totalCat===0){document.getElementById('rank-list').innerHTML='';return;}
+  document.getElementById('rank-list').innerHTML='<div style="font-weight:600;font-size:13px;color:var(--title);margin-bottom:4px;">🏆 分类支出排行</div>'+catEntries.slice(0,5).map(([cat,val],i)=>{const c=cats.find(x=>x.name===cat);const col=c?c.color:'#9B9B9B';return`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="cat-icon" style="background:${col}22;color:${col};">${c?c.icon:'📦'}</div><div style="font-size:12px;color:var(--title);flex-shrink:0;">${cat}</div><div class="rank-bar"><div class="rank-bar-fill" style="width:${val/totalCat*100}%;background:${col};"></div></div><div style="font-size:12px;font-weight:700;color:var(--title);flex-shrink:0;">¥${val}</div></div>`;}).join('');
+}
+
+function addRecord(){
+  const type=document.getElementById('rec-type').value;
+  const amount=parseFloat(document.getElementById('rec-amount').value);
+  const cat=document.getElementById('rec-cat').value;
+  const note=document.getElementById('rec-note').value;
+  if(!amount||amount<=0){alert('请输入金额');return;}
+  const records=LS.get('account_records',[]);
+  records.push({date:todayStr(),time:nowTime(),type,amount,cat,note});
+  LS.set('account_records',records);
+  document.getElementById('rec-amount').value='';
+  document.getElementById('rec-note').value='';
+  renderAccount();
+}
+
+function calcAccountStreak(records){
+  if(!records.length)return 0;
+  const dates=[...new Set(records.map(r=>r.date))].sort();
+  let streak=1,maxStreak=1;
+  for(let i=1;i<dates.length;i++){
+    const prev=new Date(dates[i-1]),cur=new Date(dates[i]);
+    const diff=(cur-prev)/(1000*60*60*24);
+    if(diff===1){streak++;maxStreak=Math.max(maxStreak,streak);}
+    else streak=1;
+  }
+  const today=todayStr(),lastDate=dates[dates.length-1];
+  const last=new Date(lastDate),t=new Date(today);
+  const diffLast=(t-last)/(1000*60*60*24);
+  if(diffLast>1)return 0;
+  return streak;
+}
+
+function openBudgetSetting(){
+  document.getElementById('budget-input').value=LS.get('account_budget',3000);
+  const toggle=document.getElementById('reminder-toggle');
+  if(LS.get('account_reminder',false))toggle.classList.add('active');
+  else toggle.classList.remove('active');
+  document.getElementById('budget-overlay').classList.add('active');
+}
+function closeBudgetSetting(){document.getElementById('budget-overlay').classList.remove('active');}
+function saveBudget(){
+  const val=parseFloat(document.getElementById('budget-input').value);
+  if(val>0)LS.set('account_budget',val);
+  closeBudgetSetting();
+  renderAccount();
+}
+function toggleReminder(){
+  const toggle=document.getElementById('reminder-toggle');
+  toggle.classList.toggle('active');
+  LS.set('account_reminder',toggle.classList.contains('active'));
+}
+
+function openCatManager(){
+  renderCatManagerList();renderCatIconGrid();renderCatColorGrid();
+  document.getElementById('cat-overlay').classList.add('active');
+}
+function closeCatManager(){document.getElementById('cat-overlay').classList.remove('active');}
+function renderCatManagerList(){
+  const cats=getCategories();
+  document.getElementById('cat-manager-list').innerHTML=cats.map((c,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><div style="display:flex;align-items:center;gap:8px;"><div class="cat-icon" style="background:${c.color}22;color:${c.color};">${c.icon}</div><span style="font-size:14px;color:var(--title);">${c.name}</span></div><button onclick="deleteCategory(${i})" style="background:none;border:none;color:var(--error);font-size:16px;cursor:pointer;padding:4px 8px;">🗑</button></div>`).join('');
+}
+function renderCatIconGrid(){
+  document.getElementById('cat-icon-grid').innerHTML=CAT_ICONS.map(ic=>`<div class="cat-grid-item ${ic===selectedCatIcon?'selected':''}" onclick="selectCatIcon('${ic}')">${ic}</div>`).join('');
+}
+function renderCatColorGrid(){
+  document.getElementById('cat-color-grid').innerHTML=CAT_COLORS.map(col=>`<div class="cat-grid-item ${col===selectedCatColor?'selected':''}" onclick="selectCatColor('${col}')" style="background:${col}22;"><div style="width:20px;height:20px;border-radius:50%;background:${col};margin:0 auto;"></div></div>`).join('');
+}
+function selectCatIcon(ic){selectedCatIcon=ic;renderCatIconGrid();}
+function selectCatColor(col){selectedCatColor=col;renderCatColorGrid();}
+function addCategory(){
+  const name=document.getElementById('new-cat-name').value.trim();
+  if(!name){alert('请输入分类名称');return;}
+  const cats=getCategories();
+  if(cats.find(c=>c.name===name)){alert('分类已存在');return;}
+  cats.push({name,icon:selectedCatIcon,color:selectedCatColor});
+  LS.set('account_categories',cats);
+  document.getElementById('new-cat-name').value='';
+  renderCatManagerList();renderAccount();
+}
+function deleteCategory(idx){
+  const cats=getCategories();
+  if(cats.length<=1){alert('至少需要保留一个分类');return;}
+  if(!confirm('确定删除「'+cats[idx].name+'」分类？'))return;
+  cats.splice(idx,1);
+  LS.set('account_categories',cats);
+  renderCatManagerList();renderAccount();
+}
+
+function exportCSV(){
+  const records=LS.get('account_records',[]);
+  const selMonth=document.getElementById('export-month').value;
+  const filtered=selMonth==='all'?records:records.filter(r=>r.date.startsWith(selMonth));
+  if(!filtered.length){alert('没有可导出的记录');return;}
+  const header='\uFEFF日期,时间,类型,分类,金额,备注\n';
+  const rows=filtered.map(r=>`${r.date},${r.time},${r.type==='income'?'收入':'支出'},${r.cat},${r.amount},${r.note||''}`).join('\n');
+  const blob=new Blob([header+rows],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`记账记录_${selMonth==='all'?'全部':selMonth}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function deleteRecord(idx){
+  if(!confirm('确定删除这条记账记录？'))return;
+  const records=LS.get('account_records',[]);
+  records.splice(idx,1);
+  LS.set('account_records',records);
+  renderAccount();
+}
+
+// ==================== 跳舞记录 ====================
+let tempDanceCover=null;
+let currentDanceId=null;
+let tempDanceMedia=[];
+const DANCE_DEFAULTS=[
+  {id:1,name:'韩舞 Lovesick Girls',cover:null,date:'2026-07-20',media:[]},
+  {id:2,name:'爵士 7 Rings',cover:null,date:'2026-07-22',media:[]},
+];
+function renderDance(){
+  const dances=LS.get('dance_records',DANCE_DEFAULTS);
+  if(dances.length===0){
+    document.getElementById('dance-list').innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:30px;">还没有舞蹈记录，添加一个吧！</div>';
+    return;
+  }
+  document.getElementById('dance-list').innerHTML=`<div class="dance-grid">${dances.map(d=>`
+    <div class="dance-card" onclick="openDanceDetail(${d.id})">
+      <button class="dance-delete" onclick="event.stopPropagation();deleteDance(${d.id})">🗑</button>
+      <div class="dance-cover">${d.cover?`<img src="${d.cover}">`:'💃'}</div>
+      ${d.media.length?`<div class="dance-count-badge">${d.media.length} 个文件</div>`:''}
+      <div class="dance-info">
+        <div class="dance-name">${d.name}</div>
+        <div class="dance-meta">${d.date}</div>
+      </div>
+    </div>
+  `).join('')}</div>`;
+}
+function onDanceCoverChange(input){
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{tempDanceCover=e.target.result; alert('封面图已选择');};
+  reader.readAsDataURL(file);
+}
+function addDance(){
+  const name=document.getElementById('dance-name').value.trim();
+  if(!name){alert('请填写舞蹈名称');return;}
+  const dances=LS.get('dance_records',DANCE_DEFAULTS);
+  dances.push({id:Date.now(),name,cover:tempDanceCover,date:todayStr(),media:[]});
+  LS.set('dance_records',dances);
+  tempDanceCover=null;
+  document.getElementById('dance-name').value='';
+  renderDance();
+}
+function deleteDance(id){
+  if(!confirm('确定要删除这个舞蹈记录吗？'))return;
+  const dances=LS.get('dance_records',DANCE_DEFAULTS);
+  LS.set('dance_records',dances.filter(d=>d.id!==id));
+  renderDance();
+}
+function openDanceDetail(id){
+  currentDanceId=id;
+  const dances=LS.get('dance_records',DANCE_DEFAULTS);
+  const d=dances.find(x=>x.id===id);
+  if(!d)return;
+  const mediaHtml=d.media.length?`<div class="dance-detail-media">${d.media.map((m,i)=>`
+    <div class="media-item">
+      ${m.type==='video'?`<video src="${m.url}" controls></video><span class="media-type-icon">🎬</span>`:`<img src="${m.url}"><span class="media-type-icon">📷</span>`}
+    </div>
+  `).join('')}</div>`:'<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">还没有照片或视频，上传一个吧！</div>';
+  document.getElementById('dance-detail-content').innerHTML=`
+    <div style="font-size:20px;font-weight:800;color:var(--title);margin-bottom:4px;">${d.name}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${d.date} · ${d.media.length} 个文件</div>
+    ${mediaHtml}
+    <button class="btn btn-pink" onclick="if(confirm('确定删除「${d.name}」？')){deleteDance(${d.id});closeDanceDetail();}" style="width:100%;margin-top:10px;background:var(--error);">🗑 删除这个舞蹈</button>
+  `;
+  document.getElementById('dance-overlay').classList.add('active');
+}
+function closeDanceDetail(){
+  document.getElementById('dance-overlay').classList.remove('active');
+  currentDanceId=null;
+  tempDanceMedia=[];
+}
+function onDanceMediaChange(input){
+  const files=Array.from(input.files);
+  if(!files.length||!currentDanceId)return;
+  let processed=0;
+  const newMedia=[];
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      newMedia.push({type:file.type.startsWith('video')?'video':'photo',url:e.target.result,date:todayStr()});
+      processed++;
+      if(processed===files.length){
+        const dances=LS.get('dance_records',DANCE_DEFAULTS);
+        const d=dances.find(x=>x.id===currentDanceId);
+        if(d){d.media.push(...newMedia);LS.set('dance_records',dances);}
+        openDanceDetail(currentDanceId);
+        renderDance();
+        alert(`已上传 ${newMedia.length} 个文件`);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ==================== 语言打卡系统 ====================
+const LANG_VOCAB = {
+  korean: [
+    {word:'안녕하세요',mean:'你好',pron:'an-nyeong-ha-se-yo',example:'안녕하세요, 만나서 반가워요.',exampleCn:'你好，很高兴认识你。'},
+    {word:'감사합니다',mean:'谢谢',pron:'gam-sa-ham-ni-da',example:'도와주셔서 감사합니다.',exampleCn:'感谢您的帮助。'},
+    {word:'미안합니다',mean:'对不起',pron:'mi-an-ham-ni-da',example:'미안합니다, 늦었어요.',exampleCn:'对不起，我迟到了。'},
+    {word:'학교',mean:'学校',pron:'hak-gyo',example:'학교에 가요.',exampleCn:'去学校。'},
+    {word:'집',mean:'家',pron:'jip',example:'집에 왔어요.',exampleCn:'我到家了。'},
+    {word:'친구',mean:'朋友',pron:'chin-gu',example:'친구와 함께 있어요.',exampleCn:'和朋友在一起。'},
+    {word:'물',mean:'水',pron:'mul',example:'물을 마시고 싶어요.',exampleCn:'我想喝水。'},
+    {word:'커피',mean:'咖啡',pron:'keo-pi',example:'아침에 커피를 마셔요.',exampleCn:'早上喝咖啡。'},
+    {word:'밥',mean:'饭',pron:'bap',example:'밥을 먹었어요.',exampleCn:'我吃饭了。'},
+    {word:'시장',mean:'市场',pron:'si-jang',example:'시장에서 장을 봐요.',exampleCn:'在市场买菜。'},
+    {word:'지하철',mean:'地铁',pron:'ji-ha-cheol',example:'지하철을 타고 가요.',exampleCn:'坐地铁去。'},
+    {word:'병원',mean:'医院',pron:'byeong-won',example:'병원에 가야 해요.',exampleCn:'必须去医院。'},
+    {word:'도서관',mean:'图书馆',pron:'do-seo-gwan',example:'도서관에서 공부해요.',exampleCn:'在图书馆学习。'},
+    {word:'책',mean:'书',pron:'chaek',example:'책을 읽고 있어요.',exampleCn:'正在读书。'},
+    {word:'핸드폰',mean:'手机',pron:'haen-deu-pon',example:'핸드폰을 잃어버렸어요.',exampleCn:'手机丢了。'},
+    {word:'날씨',mean:'天气',pron:'nal-ssi',example:'오늘 날씨가 좋아요.',exampleCn:'今天天气很好。'},
+    {word:'시간',mean:'时间',pron:'si-gan',example:'시간이 없어요.',exampleCn:'没时间了。'},
+    {word:'돈',mean:'钱',pron:'don',example:'돈이 모자라요.',exampleCn:'钱不够。'},
+    {word:'쇼핑',mean:'购物',pron:'syop-ping',example:'쇼핑하러 가요.',exampleCn:'去购物。'},
+    {word:'여행',mean:'旅行',pron:'yeo-haeng',example:'여행을 가고 싶어요.',exampleCn:'想去旅行。'}
+  ],
+  english: [
+    {word:'deadline',mean:'截止日期',pron:'/ˈdedlaɪn/',example:'The deadline is next Friday.',exampleCn:'截止日期是下周五。'},
+    {word:'schedule',mean:'日程安排',pron:'/ˈʃedjuːl/',example:'Let me check my schedule.',exampleCn:'让我看一下我的日程。'},
+    {word:'agenda',mean:'议程',pron:'/əˈdʒendə/',example:'What is on the agenda today?',exampleCn:'今天的议程是什么？'},
+    {word:'budget',mean:'预算',pron:'/ˈbʌdʒɪt/',example:'We need to stay within budget.',exampleCn:'我们需要控制在预算内。'},
+    {word:'revenue',mean:'收入',pron:'/ˈrevənjuː/',example:'Revenue increased by 20%.',exampleCn:'收入增长了20%。'},
+    {word:'proposal',mean:'提案',pron:'/prəˈpəʊzl/',example:'I will submit the proposal tomorrow.',exampleCn:'我明天提交提案。'},
+    {word:'negotiate',mean:'谈判',pron:'/nɪˈɡəʊʃieɪt/',example:'We need to negotiate the terms.',exampleCn:'我们需要谈判条款。'},
+    {word:'quarterly',mean:'季度的',pron:'/ˈkwɔːtəli/',example:'The quarterly report is due.',exampleCn:'季度报告到期了。'},
+    {word:'stakeholder',mean:'利益相关者',pron:'/ˈsteɪkhəʊldə/',example:'All stakeholders were informed.',exampleCn:'所有利益相关者都已通知。'},
+    {word:'feedback',mean:'反馈',pron:'/ˈfiːdbæk/',example:'Please send me your feedback.',exampleCn:'请把你的反馈发给我。'},
+    {word:'conference',mean:'会议',pron:'/ˈkɒnfərəns/',example:'The conference starts at 9 AM.',exampleCn:'会议上午9点开始。'},
+    {word:'invoice',mean:'发票',pron:'/ˈɪnvɔɪs/',example:'Please pay the invoice by Friday.',exampleCn:'请在周五前支付发票。'},
+    {word:'contract',mean:'合同',pron:'/ˈkɒntrækt/',example:'We signed the contract yesterday.',exampleCn:'我们昨天签了合同。'},
+    {word:'strategy',mean:'策略',pron:'/ˈstrætədʒi/',example:'Our strategy is working well.',exampleCn:'我们的策略效果很好。'},
+    {word:'objective',mean:'目标',pron:'/əbˈdʒektɪv/',example:'The main objective is growth.',exampleCn:'主要目标是增长。'},
+    {word:'priority',mean:'优先事项',pron:'/praɪˈɒrəti/',example:'This is our top priority.',exampleCn:'这是我们的首要任务。'},
+    {word:'milestone',mean:'里程碑',pron:'/ˈmaɪlstəʊn/',example:'We reached a major milestone.',exampleCn:'我们达到了一个重要里程碑。'},
+    {word:'delegate',mean:'委派',pron:'/ˈdelɪɡeɪt/',example:'I will delegate this task to him.',exampleCn:'我会把这项任务委派给他。'},
+    {word:'compliance',mean:'合规',pron:'/kəmˈplaɪəns/',example:'We must ensure compliance.',exampleCn:'我们必须确保合规。'},
+    {word:'efficiency',mean:'效率',pron:'/ɪˈfɪʃənsi/',example:'Efficiency has improved greatly.',exampleCn:'效率大幅提升。'}
+  ],
+  spanish: {
+    A2: [
+      {word:'hola',mean:'你好',pron:'/ˈola/',example:'¡Hola! ¿Cómo estás?',exampleCn:'你好！你好吗？'},
+      {word:'gracias',mean:'谢谢',pron:'/ˈɡɾaθjas/',example:'Muchas gracias por tu ayuda.',exampleCn:'非常感谢你的帮助。'},
+      {word:'perdón',mean:'对不起',pron:'/peɾˈðon/',example:'Perdón, no entiendo.',exampleCn:'对不起，我不明白。'},
+      {word:'agua',mean:'水',pron:'/ˈaɣwa/',example:'Quiero un vaso de agua.',exampleCn:'我想要一杯水。'},
+      {word:'comida',mean:'食物',pron:'/koˈmiða/',example:'La comida está deliciosa.',exampleCn:'食物很美味。'},
+      {word:'tienda',mean:'商店',pron:'/ˈtjenda/',example:'Voy a la tienda.',exampleCn:'我去商店。'},
+      {word:'tiempo',mean:'时间/天气',pron:'/ˈtjempo/',example:'¿Qué tiempo hace hoy?',exampleCn:'今天天气怎么样？'},
+      {word:'dinero',mean:'钱',pron:'/diˈneɾo/',example:'No tengo dinero.',exampleCn:'我没有钱。'},
+      {word:'trabajo',mean:'工作',pron:'/tɾaˈβaxo/',example:'Tengo mucho trabajo.',exampleCn:'我有很多工作。'},
+      {word:'familia',mean:'家庭',pron:'/faˈmilja/',example:'Mi familia es grande.',exampleCn:'我的家庭很大。'}
+    ],
+    B1: [
+      {word:'propuesta',mean:'提案',pron:'/pɾoˈpwesta/',example:'Presenté una propuesta.',exampleCn:'我提交了一个提案。'},
+      {word:'reunión',mean:'会议',pron:'/reuˈnjon/',example:'La reunión empieza a las nueve.',exampleCn:'会议九点开始。'},
+      {word:'negociar',mean:'谈判',pron:'/neɣoˈθjaɾ/',example:'Tenemos que negociar.',exampleCn:'我们需要谈判。'},
+      {word:'presupuesto',mean:'预算',pron:'/pɾesuˈpwesto/',example:'El presupuesto es limitado.',exampleCn:'预算是有限的。'},
+      {word:'ingresos',mean:'收入',pron:'/inˈɡɾesos/',example:'Los ingresos aumentaron.',exampleCn:'收入增加了。'},
+      {word:'plazo',mean:'期限',pron:'/ˈplaθo/',example:'El plazo es el viernes.',exampleCn:'期限是周五。'},
+      {word:'informe',mean:'报告',pron:'/infoɾˈme/',example:'El informe está listo.',exampleCn:'报告准备好了。'},
+      {word:'estrategia',mean:'策略',pron:'/estɾaˈtexja/',example:'Necesitamos una estrategia.',exampleCn:'我们需要一个策略。'},
+      {word:'contrato',mean:'合同',pron:'/konˈtɾato/',example:'Firmamos el contrato.',exampleCn:'我们签了合同。'},
+      {word:'cliente',mean:'客户',pron:'/kliˈente/',example:'El cliente está satisfecho.',exampleCn:'客户很满意。'}
+    ],
+    B2: [
+      {word:'rentabilidad',mean:'盈利能力',pron:'/ɾentabiˈliðað/',example:'La rentabilidad mejoró.',exampleCn:'盈利能力改善了。'},
+      {word:'viabilidad',mean:'可行性',pron:'/bjabiˈliðað/',example:'Estudiamos la viabilidad.',exampleCn:'我们研究可行性。'},
+      {word:'repercusiones',mean:'影响',pron:'/repeɾkuˈsjoɲes/',example:'Las repercusiones son graves.',exampleCn:'影响很严重。'},
+      {word:'subcontratar',mean:'外包',pron:'/suβkontɾaˈtaɾ/',example:'Decidimos subcontratar.',exampleCn:'我们决定外包。'},
+      {word:'consolidar',mean:'巩固',pron:'/konsoliˈðaɾ/',example:'Hay que consolidar la posición.',exampleCn:'需要巩固地位。'},
+      {word:'sinergia',mean:'协同效应',pron:'/siˈneɾxja/',example:'Buscamos sinergia entre equipos.',exampleCn:'我们寻找团队间的协同效应。'},
+      {word:'diversificar',mean:'多元化',pron:'/diβeɾsiˈfi kaɾ/',example:'Queremos diversificar productos.',exampleCn:'我们想多元化产品。'},
+      {word:'escalabilidad',mean:'可扩展性',pron:'/eskalaβiˈliðað/',example:'La escalabilidad es clave.',exampleCn:'可扩展性是关键。'},
+      {word:'mitigar',mean:'缓解',pron:'/miˈtiɣaɾ/',example:'Debemos mitigar riesgos.',exampleCn:'我们必须缓解风险。'},
+      {word:'disrupción',mean:'颠覆',pron:'/disɾupˈθjon/',example:'La disrupción digital cambió todo.',exampleCn:'数字颠覆改变了一切。'}
+    ]
+  }
+};
+
+let langState = { lang:'korean', level:'A2', count:10, drillWords:[], index:0, answers:[], mistakes:[], startTime:0, answered:false };
+
+function getVocab(lang, level) {
+  if(lang==='spanish') return LANG_VOCAB.spanish[level] || LANG_VOCAB.spanish.A2;
+  return LANG_VOCAB[lang] || [];
+}
+
+function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function renderLangHome() {
+  const content = document.getElementById('lang-home-content');
+  if(!content) return;
+  const langs = [
+    {id:'korean', flag:'🇰🇷', name:'韩语', desc:'日常高频词汇'},
+    {id:'english', flag:'🇬🇧', name:'英语', desc:'商务场景词汇'},
+    {id:'spanish', flag:'🇪🇸', name:'西语', desc:'DELE分级词汇'}
+  ];
+  let html = '';
+  langs.forEach(l => {
+    const vocab = getVocab(l.id, l.id==='spanish'?(LS.get('lang_level_spanish','A2')):null);
+    const total = vocab.length;
+    const learned = LS.get('lang_learned_'+l.id, []).length;
+    const records = LS.get('lang_records_'+l.id, []);
+    const streak = calcStreak(records);
+    html += `<div class="lang-home-card" onclick="goToLangDetail('${l.id}')">
+      <div class="lang-home-flag">${l.flag}</div>
+      <div class="lang-home-info">
+        <div class="lang-home-name">${l.name}</div>
+        <div class="lang-home-desc">${l.desc}</div>
+        <div class="lang-home-stats">已学 ${learned}/${total} · 连续 ${streak} 天</div>
+        <div class="lang-progress-bar"><div class="lang-progress-fill" style="width:${total?learned/total*100:0}%"></div></div>
+      </div>
+      <div class="lang-home-arrow">›</div>
+    </div>`;
+  });
+  content.innerHTML = html;
+}
+
+function renderLangDetail(lang) {
+  const panel = document.getElementById(lang+'-detail-panel');
+  if(!panel) return;
+  const vocab = getVocab(lang, lang==='spanish'?(LS.get('lang_level_spanish','A2')):null);
+  const total = vocab.length;
+  const learned = LS.get('lang_learned_'+lang, []).length;
+  const mistakes = LS.get('lang_mistakes_'+lang, []);
+  const records = LS.get('lang_records_'+lang, []);
+  const streak = calcStreak(records);
+
+  let html = `<div class="lang-overview">
+    <div class="lang-flag-big">${lang==='korean'?'🇰🇷':lang==='english'?'🇬🇧':'🇪🇸'}</div>
+    <div style="font-weight:700;color:var(--title);margin-top:6px;">${lang==='korean'?'韩语日常高频':lang==='english'?'英语商务场景':'西语DELE分级'}</div>
+    <div style="font-size:12px;color:var(--muted);margin:4px 0;">已学 ${learned} / ${total} 词 · 连续打卡 ${streak} 天</div>
+    <div class="lang-progress-bar"><div class="lang-progress-fill" style="width:${total?learned/total*100:0}%"></div></div>
+  </div>`;
+
+  if(lang==='spanish'){
+    const curLevel = LS.get('lang_level_spanish','A2');
+    html += `<div class="lang-settings">
+      <button class="lang-setting-btn ${curLevel==='A2'?'active':''}" onclick="setSpanishLevel('A2')">A2</button>
+      <button class="lang-setting-btn ${curLevel==='B1'?'active':''}" onclick="setSpanishLevel('B1')">B1</button>
+      <button class="lang-setting-btn ${curLevel==='B2'?'active':''}" onclick="setSpanishLevel('B2')">B2</button>
+    </div>`;
+  }
+
+  const curCount = LS.get('lang_count_'+lang, 10);
+  html += `<div class="lang-settings">
+    <span style="font-size:13px;color:var(--muted);align-self:center;">每次打卡：</span>
+    ${[5,10,15,20].map(c=>`<button class="lang-setting-btn ${curCount===c?'active':''}" onclick="setLangCount('${lang}',${c})">${c}词</button>`).join('')}
+  </div>
+  <button class="btn" onclick="startDrill('${lang}')" style="width:100%;margin-bottom:12px;">▶ 开始词汇打卡</button>`;
+
+  if(mistakes.length){
+    html += `<div class="card"><div class="section-title">❌ 错词本 (${mistakes.length})</div><div class="wordbook-grid">${mistakes.slice(-10).reverse().map(w=>`
+      <div class="wordbook-item">
+        <div class="wordbook-word">${w.word}</div>
+        <div class="wordbook-pron">${w.pron||''}</div>
+        <div class="wordbook-mean">${w.mean}</div>
+      </div>
+    `).join('')}</div></div>`;
+  }
+
+  html += `<div class="card"><div class="section-title">📅 打卡日历</div>`+renderCalendar(records)+`</div>`;
+
+  html += `<div class="card"><div class="section-title">📖 词库浏览</div><div class="wordbook-grid">${vocab.map(w=>`
+    <div class="wordbook-item">
+      <div class="wordbook-word">${w.word}</div>
+      <div class="wordbook-pron">${w.pron||''}</div>
+      <div class="wordbook-mean">${w.mean}</div>
+    </div>
+  `).join('')}</div></div>`;
+
+  panel.innerHTML = html;
+}
+
+function goToLangDetail(lang) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const target = document.getElementById('page-'+lang);
+  if(target) target.classList.add('active');
+  renderLangDetail(lang);
+}
+
+function backToLangHome() {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-language').classList.add('active');
+  renderLangHome();
+}
+
+function setSpanishLevel(lvl){ LS.set('lang_level_spanish',lvl); renderLangDetail('spanish'); }
+function setLangCount(lang,c){ LS.set('lang_count_'+lang,c); renderLangDetail(lang); }
+
+function startDrill(lang){
+  const level = lang==='spanish'?LS.get('lang_level_spanish','A2'):null;
+  const vocab = getVocab(lang, level);
+  const count = Math.min(LS.get('lang_count_'+lang,10), vocab.length);
+  const selected = shuffle(vocab).slice(0,count);
+  langState = { lang, level, count, drillWords:selected, index:0, answers:[], mistakes:[], startTime:Date.now(), answered:false };
+  renderDrill();
+}
+
+function renderDrill(){
+  const {lang,drillWords,index,answered} = langState;
+  const panel = document.getElementById(lang+'-detail-panel');
+  const w = drillWords[index];
+  const total = drillWords.length;
+  const qType = pickQuestionType(w, lang);
+
+  let html = `<div class="drill-card">
+    <div class="drill-header">
+      <span class="drill-counter">${index+1} / ${total}</span>
+      <span style="font-size:12px;color:var(--muted);">${qType.label}</span>
+    </div>`;
+
+  if(qType.type==='listen'){
+    html += `<div style="text-align:center;margin:16px 0;">
+      <button class="speak-btn" onclick="speakWord('${w.word.replace(/'/g,"\\'")}','${lang}')">🔊 点击听发音</button>
+    </div>
+    <div class="drill-question">听到了什么？</div>
+    <div class="drill-sub">选择对应的中文释义</div>
+    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
+  }
+  else if(qType.type==='cn2foreign'){
+    html += `<div class="drill-question">${w.mean}</div>
+    <div class="drill-sub">选择对应的外文</div>
+    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
+  }
+  else if(qType.type==='foreign2cn'){
+    html += `<div class="drill-question">${w.word}</div>
+    <div class="wordbook-pron" style="text-align:center;margin-bottom:10px;">${w.pron||''}</div>
+    <div class="drill-sub">选择对应的中文释义</div>
+    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
+  }
+  else if(qType.type==='fillword'){
+    const blanked = w.example.replace(w.word, '_____');
+    html += `<div class="drill-sub">${blanked}</div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;">中文提示：${w.mean}</div>
+    <input class="drill-input" id="fill-input" placeholder="输入单词" onkeydown="if(event.key==='Enter')submitFill()">
+    <button class="btn drill-next-btn" onclick="submitFill()">提交</button>`;
+  }
+  else if(qType.type==='selectword'){
+    html += `<div class="drill-sub">${qType.blanked}</div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;">中文提示：${w.mean}</div>
+    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
+  }
+  else if(qType.type==='translate'){
+    html += `<div class="drill-sub">${w.example}</div>
+    <input class="drill-input" id="trans-input" placeholder="输入中文翻译" onkeydown="if(event.key==='Enter')submitTrans()">
+    <button class="btn drill-next-btn" onclick="submitTrans()">提交</button>`;
+  }
+
+  html += `<div class="drill-feedback" id="drill-feedback"></div>`;
+
+  if(answered){
+    html += `<button class="btn drill-next-btn" onclick="nextDrill()">${index+1<total?'下一题 ➜':'查看结果 ✓'}</button>`;
+  }
+
+  html += `</div>`;
+  panel.innerHTML = html;
+}
+
+function pickQuestionType(w,lang){
+  let types = ['listen','cn2foreign','foreign2cn','translate'];
+  if(lang==='korean') types.push('selectword');
+  else types.push('fillword');
+  const type = types[Math.floor(Math.random()*types.length)];
+  const vocab = getVocab(lang, langState.level);
+  const labelMap = {listen:'👂 听力',cn2foreign:'📝 中→外',foreign2cn:'📝 外→中',fillword:'✏️ 单词填空',selectword:'📝 单词选择',translate:'✏️ 翻译填空'};
+
+  if(type==='listen'||type==='foreign2cn'){
+    const opts = shuffle(vocab.filter(x=>x.word!==w.word).slice(0,3).concat(w)).map(x=>({text:x.mean,isCorrect:x.word===w.word}));
+    return {type,label:labelMap[type],options:shuffle(opts)};
+  }
+  if(type==='cn2foreign'){
+    const opts = shuffle(vocab.filter(x=>x.word!==w.word).slice(0,3).concat(w)).map(x=>({text:x.word,isCorrect:x.word===w.word}));
+    return {type,label:labelMap[type],options:shuffle(opts)};
+  }
+  if(type==='selectword'){
+    const blanked = w.example.replace(w.word, '_____');
+    const opts = shuffle(vocab.filter(x=>x.word!==w.word).slice(0,3).concat(w)).map(x=>({text:x.word,isCorrect:x.word===w.word}));
+    return {type,label:labelMap[type],blanked,options:shuffle(opts)};
+  }
+  return {type,label:labelMap[type]};
+}
+
+function speakWord(word,lang){
+  const voices = {'korean':'ko-KR','english':'en-US','spanish':'es-ES'};
+  const u = new SpeechSynthesisUtterance(word);
+  u.lang = voices[lang] || 'en-US';
+  u.rate = 0.8;
+  speechSynthesis.speak(u);
+}
+
+function submitAnswer(idx,isCorrect){
+  if(langState.answered) return;
+  langState.answered = true;
+  const correct = isCorrect==='true';
+  const el = document.getElementById('opt-'+idx);
+  const fb = document.getElementById('drill-feedback');
+  if(correct){ el.classList.add('correct'); fb.textContent='✅ 正确！'; fb.style.color='var(--success)'; }
+  else { el.classList.add('wrong'); fb.textContent='❌ 错误'; fb.style.color='var(--error)'; }
+  langState.answers.push(correct);
+  if(!correct) langState.mistakes.push(langState.drillWords[langState.index]);
+
+  document.querySelectorAll('.drill-opt').forEach((opt,i)=>{
+    if(opt.dataset&&opt.dataset.correct==='true') opt.classList.add('correct');
+  });
+
+  const card = document.querySelector('.drill-card');
+  const btn = document.createElement('button');
+  btn.className='btn drill-next-btn';
+  btn.textContent = langState.index+1<langState.drillWords.length?'下一题 ➜':'查看结果 ✓';
+  btn.onclick = nextDrill;
+  card.appendChild(btn);
+}
+
+function submitFill(){
+  if(langState.answered) return;
+  const input = document.getElementById('fill-input');
+  if(!input) return;
+  const val = input.value.trim().toLowerCase();
+  if(!val){input.focus();return;}
+  langState.answered = true;
+  const w = langState.drillWords[langState.index];
+  const correct = val === w.word.toLowerCase();
+  const fb = document.getElementById('drill-feedback');
+  if(correct){ fb.textContent='✅ 正确！'; fb.style.color='var(--success)'; input.style.borderColor='var(--success)'; }
+  else { fb.textContent='❌ 正确答案是：'+w.word; fb.style.color='var(--error)'; input.style.borderColor='var(--error)'; }
+  langState.answers.push(correct);
+  if(!correct) langState.mistakes.push(w);
+  const btn = document.createElement('button'); btn.className='btn drill-next-btn';
+  btn.textContent = langState.index+1<langState.drillWords.length?'下一题 ➜':'查看结果 ✓';
+  btn.onclick = nextDrill;
+  input.parentElement.appendChild(btn);
+}
+
+function submitTrans(){
+  if(langState.answered) return;
+  const input = document.getElementById('trans-input');
+  if(!input) return;
+  const val = input.value.trim();
+  if(!val){input.focus();return;}
+  langState.answered = true;
+  const w = langState.drillWords[langState.index];
+  const keywords = w.mean.split(/[,，、]/).map(s=>s.trim()).filter(Boolean);
+  const correct = keywords.some(k=>val.includes(k));
+  const fb = document.getElementById('drill-feedback');
+  if(correct){ fb.textContent='✅ 正确！'; fb.style.color='var(--success)'; input.style.borderColor='var(--success)'; }
+  else { fb.textContent='参考翻译：'+w.exampleCn; fb.style.color='var(--error)'; input.style.borderColor='var(--error)'; }
+  langState.answers.push(correct);
+  if(!correct) langState.mistakes.push(w);
+  const btn = document.createElement('button'); btn.className='btn drill-next-btn';
+  btn.textContent = langState.index+1<langState.drillWords.length?'下一题 ➜':'查看结果 ✓';
+  btn.onclick = nextDrill;
+  input.parentElement.appendChild(btn);
+}
+
+function nextDrill(){
+  langState.index++;
+  langState.answered = false;
+  if(langState.index >= langState.drillWords.length){
+    finishDrill();
+  } else {
+    renderDrill();
+  }
+}
+
+function finishDrill(){
+  const {lang,answers,mistakes,startTime,drillWords} = langState;
+  const correctCount = answers.filter(Boolean).length;
+  const total = answers.length;
+  const accuracy = total?Math.round(correctCount/total*100):0;
+  const duration = Math.round((Date.now()-startTime)/1000);
+  const mins = Math.floor(duration/60);
+  const secs = duration%60;
+
+  const records = LS.get('lang_records_'+lang,[]);
+  records.push({date:todayStr(),time:nowTime(),total,correct:correctCount,accuracy,duration});
+  LS.set('lang_records_'+lang,records);
+
+  if(mistakes.length){
+    const existing = LS.get('lang_mistakes_'+lang,[]);
+    const merged = existing.concat(mistakes);
+    const seen = new Set();
+    const uniq = [];
+    for(const m of merged.reverse()){ if(!seen.has(m.word)){seen.add(m.word);uniq.push(m);} }
+    LS.set('lang_mistakes_'+lang,uniq.reverse());
+  }
+
+  const learned = LS.get('lang_learned_'+lang,[]);
+  drillWords.forEach(w=>{ if(!learned.includes(w.word)) learned.push(w.word); });
+  LS.set('lang_learned_'+lang,learned);
+
+  const stars = accuracy>=90?'⭐⭐⭐':accuracy>=70?'⭐⭐':accuracy>=50?'⭐':'💪';
+  let html = `<div class="result-score">${accuracy}%</div>
+    <div class="result-stars">${stars}</div>
+    <div style="text-align:center;color:var(--muted);font-size:14px;margin-bottom:16px;">
+      答对 ${correctCount}/${total} 题 · 用时 ${mins}分${secs}秒
+    </div>`;
+
+  if(mistakes.length){
+    html += `<div class="section-title">❌ 错题回顾</div>`;
+    html += mistakes.map(m=>`<div class="mistake-item">
+      <span><b>${m.word}</b> ${m.pron?'('+m.pron+')':''}</span>
+      <span style="color:var(--muted);">${m.mean}</span>
+    </div>`).join('');
+  }
+
+  html += `<button class="btn" onclick="closeLangResult();renderLangDetail('${lang}');" style="width:100%;margin-top:16px;">知道了</button>`;
+
+  document.getElementById('lang-result-content').innerHTML = html;
+  document.getElementById('lang-overlay').classList.add('active');
+}
+
+function closeLangResult(){ document.getElementById('lang-overlay').classList.remove('active'); }
+
+function renderCalendar(records){
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const firstDay = new Date(year,month,1).getDay();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+  const checkDates = new Set(records.filter(r=>r.date.startsWith(`${year}-${month+1}`)).map(r=>parseInt(r.date.split('-')[2])));
+  const todayDate = today.getDate();
+
+  const weekdays = ['日','一','二','三','四','五','六'];
+  let html = `<div class="calendar-grid">${weekdays.map(d=>`<div style="font-size:11px;color:var(--muted);font-weight:600;">${d}</div>`).join('')}`;
+  for(let i=0;i<firstDay;i++) html += `<div class="calendar-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const isToday = d===todayDate;
+    const isChecked = checkDates.has(d);
+    html += `<div class="calendar-day ${isChecked?'checked':''} ${isToday?'today':''}">${d}</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function calcStreak(records){
+  if(!records.length) return 0;
+  const dates = [...new Set(records.map(r=>r.date))].sort();
+  let streak = 0;
+  const today = todayStr();
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yestStr = `${yesterday.getFullYear()}-${yesterday.getMonth()+1}-${yesterday.getDate()}`;
+  if(dates.includes(today)||dates.includes(yestStr)){
+    streak = 1;
+    for(let i=dates.length-1;i>0;i--){
+      const d1 = new Date(dates[i]); const d0 = new Date(dates[i-1]);
+      const diff = (d1-d0)/(1000*60*60*24);
+      if(diff===1) streak++; else break;
+    }
+  }
+  return streak;
+}
+
+// ==================== 开心成长日记 ====================
+let tempAlbumPhotos=[],selectedTemplate=null;
+const ALBUM_TEMPLATES={
+  food:{icon:'🍜',text:'今天吃到了超好吃的美食！',tags:['#美食']},
+  travel:{icon:'✈️',text:'今天去了超棒的地方旅行！',tags:['#旅行']},
+  family:{icon:'👶',text:'今天和宝宝度过了温馨的时光！',tags:['#亲子','#宝宝成长']},
+  achievement:{icon:'🏆',text:'今天完成了一件超有成就感的事！',tags:['#成就']}
+};
+
+function migrateAlbumData(){
+  let entries=LS.get('album_entries',[]);
+  if(entries.length>0&&(entries[0].photo!==undefined||entries[0].photos===undefined)){
+    entries=entries.map((e,i)=>({
+      id:'album_'+Date.now()+'_'+i,
+      photos:e.photo?[e.photo]:[],
+      text:e.text,
+      date:e.date,
+      tags:[],
+      template:null
+    }));
+    LS.set('album_entries',entries);
+  }
+}
+
+function getAlbumEntries(){migrateAlbumData();return LS.get('album_entries',[]);}
+
+function renderAlbum(){
+  const entries=getAlbumEntries();
+  const selMonth=document.getElementById('album-month-filter').value;
+  const selTag=document.querySelector('.tag-chip.selected')?.dataset.tag;
+  let filtered=entries;
+  if(selMonth&&selMonth!=='all')filtered=filtered.filter(e=>e.date.startsWith(selMonth));
+  if(selTag)filtered=filtered.filter(e=>e.tags.includes(selTag));
+  // 统计
+  renderAlbumStats(entries);
+  renderAlbumTagCloud(entries);
+  renderAlbumMonthFilter(entries);
+  // 时间轴
+  const grouped=groupByMonth(filtered);
+  let html='';
+  if(!filtered.length){html='<div style="color:var(--muted);font-size:13px;text-align:center;padding:30px;">还没有日记记录</div>';}
+  else{
+    Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([month,items])=>{
+      html+=`<div class="timeline-month">${month} <span style="font-size:12px;color:var(--muted);font-weight:400;">(${items.length}篇)</span></div>`;
+      html+=`<div class="timeline-entries">${items.reverse().map(e=>renderAlbumCard(e)).join('')}</div>`;
+    });
+  }
+  html+=`<div class="album-card album-add" onclick="openAlbumForm()" style="margin-top:12px;"><div style="font-size:32px;">+</div><div>写日记</div></div>`;
+  document.getElementById('album-timeline').innerHTML=html;
+}
+
+function renderAlbumCard(e){
+  const photoHtml=e.photos.length?`<div class="photo-grid grid-${Math.min(e.photos.length,9)}">${e.photos.map(p=>`<img src="${p}">`).join('')}</div>`:'';
+  const tagHtml=e.tags.length?`<div class="entry-tags">${e.tags.map(t=>`<span class="entry-tag">${t}</span>`).join('')}</div>`:'';
+  return `<div class="album-card">
+    ${photoHtml}
+    <div class="album-text">${e.text}</div>
+    ${tagHtml}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 10px 10px;">
+      <div class="album-date">${e.date}</div>
+      <button onclick="deleteAlbumEntry('${e.id}')" style="background:none;border:none;font-size:14px;color:var(--error);cursor:pointer;padding:2px 6px;">🗑</button>
+    </div>
+  </div>`;
+}
+
+function groupByMonth(entries){
+  const g={};
+  entries.forEach(e=>{const m=e.date.slice(0,7);(g[m]=g[m]||[]).push(e);});
+  return g;
+}
+
+function renderAlbumStats(entries){
+  const months=new Set(entries.map(e=>e.date.slice(0,7)));
+  const totalTags=entries.reduce((s,e)=>s+e.tags.length,0);
+  const tagCounts={};
+  entries.forEach(e=>e.tags.forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1;}));
+  const topTag=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('album-stats').innerHTML=`<div class="schedule-stats"><div class="stat-box"><div class="stat-val">${entries.length}</div><div class="stat-label">日记总数</div></div><div class="stat-box"><div class="stat-val">${months.size}</div><div class="stat-label">记录月份</div></div><div class="stat-box"><div class="stat-val">${totalTags}</div><div class="stat-label">标签使用</div></div></div>`;
+}
+
+function renderAlbumTagCloud(entries){
+  const counts={};
+  entries.forEach(e=>e.tags.forEach(t=>{counts[t]=(counts[t]||0)+1;}));
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const selTag=document.querySelector('.tag-chip.selected')?.dataset.tag;
+  const colors=['#E07A6B','#9B8BB4','#6B95A8','#8AAA7B','#C4A265','#D47A8E','#6BAAAA','#7A8BB4'];
+  document.getElementById('album-tag-cloud').innerHTML=sorted.map(([tag,cnt],i)=>`<span class="tag-chip ${tag===selTag?'selected':''}" data-tag="${tag}" onclick="toggleAlbumTag('${tag}')" style="background:${colors[i%colors.length]}22;color:${colors[i%colors.length]};font-size:${Math.max(11,13+cnt)}px;">${tag} ${cnt}</span>`).join('')||'<span style="color:var(--muted);font-size:12px;">暂无标签</span>';
+}
+
+function renderAlbumMonthFilter(entries){
+  const months=[...new Set(entries.map(e=>e.date.slice(0,7)))].sort().reverse();
+  const sel=document.getElementById('album-month-filter');
+  const cur=sel.value;
+  sel.innerHTML='<option value="all">全部月份</option>'+months.map(m=>`<option value="${m}">${m}</option>`).join('');
+  if(cur&&months.includes(cur))sel.value=cur;
+}
+
+function toggleAlbumTag(tag){
+  const sel=document.querySelector('.tag-chip.selected');
+  if(sel&&sel.dataset.tag===tag){sel.classList.remove('selected');}
+  else{document.querySelectorAll('.tag-chip').forEach(t=>t.classList.remove('selected'));const el=document.querySelector(`.tag-chip[data-tag="${tag}"]`);if(el)el.classList.add('selected');}
+  renderAlbum();
+}
+
+function resetAlbumFilter(){
+  document.querySelectorAll('.tag-chip').forEach(t=>t.classList.remove('selected'));
+  document.getElementById('album-month-filter').value='all';
+  renderAlbum();
+}
+
+function selectTemplate(key){
+  document.querySelectorAll('.template-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tpl-'+key).classList.add('active');
+  selectedTemplate=key;
+  const tpl=ALBUM_TEMPLATES[key];
+  document.getElementById('album-text').value=tpl.text;
+  document.getElementById('album-tags').value=tpl.tags.join(' ');
+}
+
+function openAlbumForm(){
+  document.getElementById('album-form').style.display='block';
+  document.getElementById('album-export').style.display='none';
+  document.getElementById('album-preview-grid').style.display='none';
+  document.getElementById('album-preview-grid').innerHTML='';
+  tempAlbumPhotos=[];selectedTemplate=null;
+  document.querySelectorAll('.template-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('album-text').value='';
+  document.getElementById('album-tags').value='';
+}
+function closeAlbumForm(){document.getElementById('album-form').style.display='none';tempAlbumPhotos=[];selectedTemplate=null;}
+
+function onAlbumPhotoChange(input){
+  const files=Array.from(input.files).slice(0,9-tempAlbumPhotos.length);
+  if(!files.length)return;
+  let loaded=0;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{tempAlbumPhotos.push(e.target.result);loaded++;if(loaded===files.length)renderAlbumPreview();};
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderAlbumPreview(){
+  const grid=document.getElementById('album-preview-grid');
+  grid.innerHTML=tempAlbumPhotos.map((p,i)=>`<div class="preview-item"><img src="${p}"><button class="preview-del" onclick="removeAlbumPhoto(${i})">×</button></div>`).join('');
+  grid.style.display='grid';
+}
+
+function removeAlbumPhoto(idx){
+  tempAlbumPhotos.splice(idx,1);
+  renderAlbumPreview();
+}
+
+function saveAlbumEntry(){
+  const text=document.getElementById('album-text').value.trim();
+  if(!text){alert('写点什么吧');return;}
+  const rawTags=document.getElementById('album-tags').value.trim();
+  const tags=rawTags?rawTags.split(/\s+/).map(t=>t.startsWith('#')?t:'#'+t).filter(t=>t.length>1):[];
+  const entries=getAlbumEntries();
+  entries.push({id:'album_'+Date.now(),photos:tempAlbumPhotos,text,date:todayStr(),tags,template:selectedTemplate});
+  LS.set('album_entries',entries);
+  closeAlbumForm();
+  renderAlbum();
+}
+
+function deleteAlbumEntry(id){
+  if(!confirm('确定删除这篇日记？'))return;
+  let entries=getAlbumEntries();
+  entries=entries.filter(e=>e.id!==id);
+  LS.set('album_entries',entries);
+  renderAlbum();
+}
+
+function openAlbumExport(){
+  const entries=getAlbumEntries();
+  if(!entries.length){alert('还没有日记可以导出');return;}
+  const months=[...new Set(entries.map(e=>e.date.slice(0,7)))].sort();
+  const s1=document.getElementById('pdf-start-month');
+  const s2=document.getElementById('pdf-end-month');
+  const opts=months.map(m=>`<option value="${m}">${m}</option>`).join('');
+  s1.innerHTML=opts;s2.innerHTML=opts;
+  if(months.length){s1.value=months[0];s2.value=months[months.length-1];}
+  document.getElementById('album-export').style.display='block';
+  document.getElementById('album-form').style.display='none';
+}
+
+function doExportPDF(){
+  const entries=getAlbumEntries();
+  const startMonth=document.getElementById('pdf-start-month').value;
+  const endMonth=document.getElementById('pdf-end-month').value;
+  const coverTitle=document.getElementById('pdf-title').value.trim();
+  if(startMonth>endMonth){alert('开始月份不能晚于结束月份');return;}
+  const filtered=entries.filter(e=>{const m=e.date.slice(0,7);return m>=startMonth&&m<=endMonth;}).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!filtered.length){alert('该范围内没有日记');return;}
+  const coverHtml=coverTitle?`<div style="text-align:center;padding:60px 20px;border-bottom:2px solid #f8bbd0;margin-bottom:30px;"><h1 style="font-size:28px;color:#880e4f;margin-bottom:10px;">${coverTitle}</h1><p style="color:#888;">${startMonth} ~ ${endMonth}</p></div>`:'';
+  const printContent=filtered.map(e=>{
+    const photoHtml=e.photos.length?`<div class="photo-grid grid-${Math.min(e.photos.length,9)}" style="margin-bottom:12px;">${e.photos.map(p=>`<img src="${p}" style="border-radius:8px;">`).join('')}</div>`:'';
+    const tagHtml=e.tags.length?`<div style="margin-bottom:8px;">${e.tags.map(t=>`<span style="display:inline-block;padding:2px 8px;border-radius:8px;background:var(--brand-light);color:var(--brand);font-size:11px;margin-right:4px;">${t}</span>`).join('')}</div>`:'';
+    return `<div style="margin-bottom:30px;page-break-inside:avoid;"><div style="font-size:12px;color:#888;margin-bottom:8px;">${e.date}</div>${photoHtml}${tagHtml}<div style="font-size:14px;line-height:1.6;color:#333;">${e.text}</div></div>`;
+  }).join('');
+  document.getElementById('print-album-content').innerHTML=coverHtml+printContent;
+  document.getElementById('album-export').style.display='none';
+  window.print();
+}
+
+// ==================== 生活日程 ====================
+const DEFAULT_SCH_CATS=[
+  {key:'work',name:'工作',icon:'💼',color:'#1565c0'},
+  {key:'life',name:'生活',icon:'🏠',color:'#c2185b'},
+  {key:'study',name:'学习',icon:'📚',color:'#8AAA7B'},
+  {key:'sports',name:'运动',icon:'🏃',color:'#ef6c00'},
+  {key:'social',name:'社交',icon:'🎉',color:'#9B8BB4'},
+  {key:'other',name:'其他',icon:'📌',color:'#607d8b'}
+];
+const REPEAT_LABELS={none:'不重复',daily:'每天',weekly:'每周',monthly:'每月',workdays:'工作日'};
+let scheduleState={viewYear:new Date().getFullYear(),viewMonth:new Date().getMonth(),selectedDate:todayStr()};
+
+function getSchCats(){return LS.get('schedule_categories',DEFAULT_SCH_CATS);}
+function getSchedules(){
+  let s=LS.get('schedules',[]);
+  if(s.length>0&&!s[0].id){
+    s=s.map((item,i)=>({id:'sch_'+Date.now()+'_'+i,date:todayStr(),time:item.time,title:item.title,cat:item.cat,note:item.note||'',repeat:'none',remindBefore:0,remindEnabled:false}));
+    LS.set('schedules',s);
+  }
+  return s;
+}
+function isEventOnDate(ev,dateStr){
+  if(ev.repeat==='none')return ev.date===dateStr;
+  const t=new Date(dateStr),tDay=t.getDay(),tDate=t.getDate();
+  if(ev.repeat==='daily')return true;
+  if(ev.repeat==='workdays')return tDay>=1&&tDay<=5;
+  if(ev.repeat==='weekly'){const o=new Date(ev.date);return o.getDay()===tDay;}
+  if(ev.repeat==='monthly'){const o=new Date(ev.date);return o.getDate()===tDate;}
+  return false;
+}
+function getEventsForDate(dateStr){return getSchedules().filter(ev=>isEventOnDate(ev,dateStr));}
+function timeToMinutes(timeStr){const[h,m]=timeStr.split(':').map(Number);return h*60+m;}
+
+function renderSchedule(){
+  renderScheduleCalendar();
+  renderScheduleStats();
+  renderDayEvents();
+  renderScheduleForm();
+}
+
+function renderScheduleCalendar(){
+  const y=scheduleState.viewYear,m=scheduleState.viewMonth;
+  const firstDay=new Date(y,m,1).getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const daysInPrevMonth=new Date(y,m,0).getDate();
+  document.getElementById('cal-month-label').textContent=`${y}年${m+1}月`;
+  let html='<div class="cal-weekdays"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>';
+  html+='<div class="cal-days">';
+  for(let i=firstDay-1;i>=0;i--)html+=`<div class="cal-day other-month"><div class="cal-day-num">${daysInPrevMonth-i}</div></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const count=getEventsForDate(dateStr).length;
+    const isToday=dateStr===todayStr();
+    const isSelected=dateStr===scheduleState.selectedDate;
+    html+=`<div class="cal-day ${isToday?'today':''} ${isSelected?'selected':''}" onclick="selectScheduleDate('${dateStr}')"><div class="cal-day-num">${d}</div>${count>0?`<div class="cal-dots">${Array(Math.min(count,3)).fill('<span class="cal-dot"></span>').join('')}</div>`:''}</div>`;
+  }
+  const totalCells=firstDay+daysInMonth;
+  const nextDays=totalCells%7===0?0:7-(totalCells%7);
+  for(let d=1;d<=nextDays;d++)html+=`<div class="cal-day other-month"><div class="cal-day-num">${d}</div></div>`;
+  html+='</div>';
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+function renderScheduleStats(){
+  const events=getEventsForDate(todayStr());
+  const completions=LS.get('schedule_completions',{});
+  const completed=events.filter(e=>completions[`${e.id}_${todayStr()}`]).length;
+  const rate=events.length>0?Math.round(completed/events.length*100):0;
+  document.getElementById('schedule-stats').innerHTML=`<div class="schedule-stats"><div class="stat-box"><div class="stat-val" style="color:var(--brand);">${completed}</div><div class="stat-label">今日已完成</div></div><div class="stat-box"><div class="stat-val">${events.length}</div><div class="stat-label">今日日程</div></div><div class="stat-box"><div class="stat-val" style="color:${rate===100?'var(--brand)':rate>=50?'var(--warn)':'var(--muted)'};">${rate}%</div><div class="stat-label">完成率</div></div></div>`;
+}
+
+function renderDayEvents(){
+  const dateStr=scheduleState.selectedDate;
+  const events=getEventsForDate(dateStr).sort((a,b)=>a.time.localeCompare(b.time));
+  const completions=LS.get('schedule_completions',{});
+  const cats=getSchCats();
+  document.getElementById('day-events-title').textContent=`${dateStr} 的日程`;
+  document.getElementById('day-events-list').innerHTML=events.map(ev=>{
+    const cat=cats.find(c=>c.key===ev.cat)||cats[0];
+    const isDone=completions[`${ev.id}_${dateStr}`];
+    return `<div class="schedule-item" style="${isDone?'opacity:0.5;':''}">
+      <div class="sch-status ${isDone?'done':''}" onclick="toggleScheduleComplete('${ev.id}','${dateStr}')">${isDone?'✓':''}</div>
+      <div class="schedule-time" style="${isDone?'text-decoration:line-through;':''}">${ev.time}</div>
+      <div class="schedule-content">
+        <div class="schedule-title"><span class="schedule-cat" style="background:${cat.color}22;color:${cat.color};">${cat.icon} ${cat.name}</span>${ev.title}</div>
+        ${ev.note?`<div class="schedule-note">${ev.note}</div>`:''}
+        ${ev.repeat!=='none'?`<div class="schedule-note">🔁 ${REPEAT_LABELS[ev.repeat]}</div>`:''}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+        ${ev.remindEnabled?'<span style="font-size:14px;">🔔</span>':''}
+        <button onclick="deleteSchedule('${ev.id}')" style="background:none;border:none;font-size:14px;color:var(--error);cursor:pointer;padding:2px 4px;">🗑</button>
+      </div>
+    </div>`;
+  }).join('')||'<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">这一天没有日程</div>';
+}
+
+function renderScheduleForm(){
+  const cats=getSchCats();
+  document.getElementById('sch-cat').innerHTML=cats.map(c=>`<option value="${c.key}">${c.icon} ${c.name}</option>`).join('');
+  document.getElementById('sch-date').value=scheduleState.selectedDate;
+}
+
+function selectScheduleDate(dateStr){
+  scheduleState.selectedDate=dateStr;
+  renderScheduleCalendar();
+  renderDayEvents();
+  renderScheduleForm();
+}
+
+function goToToday(){
+  const now=new Date();
+  scheduleState.viewYear=now.getFullYear();
+  scheduleState.viewMonth=now.getMonth();
+  scheduleState.selectedDate=todayStr();
+  renderSchedule();
+}
+
+function changeScheduleMonth(delta){
+  scheduleState.viewMonth+=delta;
+  if(scheduleState.viewMonth>11){scheduleState.viewMonth=0;scheduleState.viewYear++;}
+  if(scheduleState.viewMonth<0){scheduleState.viewMonth=11;scheduleState.viewYear--;}
+  renderScheduleCalendar();
+}
+
+function toggleScheduleComplete(id,dateStr){
+  const completions=LS.get('schedule_completions',{});
+  const key=`${id}_${dateStr}`;
+  if(completions[key])delete completions[key];
+  else completions[key]=true;
+  LS.set('schedule_completions',completions);
+  renderScheduleStats();
+  renderDayEvents();
+}
+
+function checkTimeConflict(date,time){
+  const events=getEventsForDate(date);
+  const newStart=timeToMinutes(time),newEnd=newStart+60;
+  return events.filter(ev=>{const es=timeToMinutes(ev.time),ee=es+60;return newStart<ee&&newEnd>es;});
+}
+
+function addSchedule(){
+  const date=document.getElementById('sch-date').value||todayStr();
+  const time=document.getElementById('sch-time').value;
+  const title=document.getElementById('sch-title').value.trim();
+  const cat=document.getElementById('sch-cat').value;
+  const repeat=document.getElementById('sch-repeat').value;
+  const remind=parseInt(document.getElementById('sch-remind').value);
+  if(!time||!title){alert('请填写时间和名称');return;}
+  const conflicts=checkTimeConflict(date,time);
+  if(conflicts.length>0){
+    const names=conflicts.map(c=>`${c.time} ${c.title}`).join('、');
+    if(!confirm(`⚠️ 时间冲突！该时段已有：${names}\n\n仍要添加吗？`))return;
+  }
+  const schedules=getSchedules();
+  schedules.push({id:'sch_'+Date.now(),date,time,title,cat,note:'',repeat,remindBefore:remind,remindEnabled:remind>0});
+  LS.set('schedules',schedules);
+  document.getElementById('sch-time').value='';
+  document.getElementById('sch-title').value='';
+  document.getElementById('sch-repeat').value='none';
+  document.getElementById('sch-remind').value='0';
+  scheduleState.selectedDate=date;
+  renderSchedule();
+  if(remind>0){requestNotificationPermission();setupReminders();}
+}
+
+function deleteSchedule(id){
+  if(!confirm('确定删除这条日程？'))return;
+  let schedules=getSchedules();
+  schedules=schedules.filter(s=>s.id!==id);
+  LS.set('schedules',schedules);
+  renderSchedule();
+}
+
+// Notification API
+function requestNotificationPermission(){
+  if(!('Notification' in window)){alert('您的浏览器不支持系统通知');return;}
+  if(Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{LS.set('notification_permission',p);if(p==='granted')setupReminders();});
+  }else if(Notification.permission==='granted'){setupReminders();}
+}
+function setupReminders(){
+  if(window._reminderInterval)clearInterval(window._reminderInterval);
+  window._reminderInterval=setInterval(checkReminders,60000);
+  checkReminders();
+}
+function checkReminders(){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const now=new Date(),today=todayStr();
+  const completions=LS.get('schedule_completions',{});
+  const notified=LS.get('schedule_notified',{});
+  getSchedules().forEach(s=>{
+    if(!s.remindEnabled||s.remindBefore<=0)return;
+    if(!isEventOnDate(s,today))return;
+    const eventTime=new Date(`${today}T${s.time}`);
+    const remindTime=new Date(eventTime.getTime()-s.remindBefore*60000);
+    const diff=now.getTime()-remindTime.getTime();
+    if(diff>=0&&diff<60000){
+      const nkey=`${s.id}_${today}`;
+      if(!completions[`_${s.id}_${today}`]&&!notified[nkey]){
+        new Notification('⏰ 日程提醒',{body:`${s.time} - ${s.title}`,icon:'/icon.svg'});
+        notified[nkey]=true;
+        LS.set('schedule_notified',notified);
+      }
+    }
+  });
+}
+if('Notification' in window&&Notification.permission==='granted'){setupReminders();}
+
+// ==================== 小小的日记 ====================
+const DEFAULT_MOODS=[
+  {emoji:'😊',name:'开心',group:'happy'},{emoji:'🥰',name:'幸福',group:'happy'},{emoji:'😄',name:'兴奋',group:'happy'},
+  {emoji:'😢',name:'难过',group:'sad'},{emoji:'😔',name:'失落',group:'sad'},{emoji:'😟',name:'焦虑',group:'sad'},
+  {emoji:'😠',name:'生气',group:'angry'},{emoji:'😤',name:'郁闷',group:'angry'},{emoji:'😒',name:'不满',group:'angry'},
+  {emoji:'😴',name:'疲惫',group:'calm'},{emoji:'😐',name:'平静',group:'calm'},{emoji:'🤔',name:'思考',group:'calm'}
+];
+const GROUP_NAMES={happy:'开心',sad:'难过',angry:'生气',calm:'平静'};
+const GROUP_COLORS={happy:'#C4A265',sad:'#6B95A8',angry:'#E07A6B',calm:'#8AAA7B'};
+const DIARY_TEMPLATES={
+  free:{hint:'自由书写，记录任何你想写的内容',placeholder:'写下今天的心情...'},
+  gratitude:{hint:'写下今天值得感谢的三件事',placeholder:'1. 我感谢...\n2. 我感谢...\n3. 我感谢...'},
+  reflect:{hint:'回顾今天的收获和不足',placeholder:'今天的收获：\n\n可以改进的地方：'}
+};
+let diaryState={selectedMood:'',template:'free',lockCode:'',isLocked:false};
+
+function getMoods(){return LS.get('diary_moods',DEFAULT_MOODS);}
+function getDiaryEntries(){
+  let entries=LS.get('diary_entries',[]);
+  if(entries.length>0&&typeof entries[0].mood==='string'&&!entries[0].moodKey){
+    entries=entries.map((e,i)=>({id:'diary_'+Date.now()+'_'+i,moodKey:e.mood,text:e.text,date:e.date,tags:[],template:'free'}));
+    LS.set('diary_entries',entries);
+  }
+  return entries;
+}
+
+// 简单XOR加密
+function simpleEncrypt(text,key){if(!key)return text;let out='';for(let i=0;i<text.length;i++)out+=String.fromCharCode(text.charCodeAt(i)^key.charCodeAt(i%key.length));return btoa(out);}
+function simpleDecrypt(b64,key){if(!key)return b64;try{const text=atob(b64);let out='';for(let i=0;i<text.length;i++)out+=String.fromCharCode(text.charCodeAt(i)^key.charCodeAt(i%key.length));return out;}catch(e){return b64;}}
+
+function renderDiary(){
+  renderMoodSelector();
+  renderDiaryStats();
+  renderDiaryReview();
+  renderDiaryList();
+}
+
+function renderMoodSelector(){
+  const moods=getMoods();
+  const groups={happy:[],sad:[],angry:[],calm:[]};
+  moods.forEach(m=>{if(groups[m.group])groups[m.group].push(m);});
+  let html='';
+  Object.entries(groups).forEach(([g,items])=>{
+    if(!items.length)return;
+    html+=`<div class="mood-group-title">${GROUP_NAMES[g]}</div><div class="mood-group">${items.map(m=>`<span class="mood-btn ${diaryState.selectedMood===m.emoji?'selected':''}" onclick="selectDiaryMood('${m.emoji}')" title="${m.name}">${m.emoji}</span>`).join('')}</div>`;
+  });
+  document.getElementById('mood-selector-area').innerHTML=html;
+}
+
+function selectDiaryMood(emoji){diaryState.selectedMood=diaryState.selectedMood===emoji?'':emoji;renderMoodSelector();}
+
+function selectDiaryTemplate(key){
+  diaryState.template=key;
+  document.querySelectorAll('.template-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tpl-tab-'+key).classList.add('active');
+  const tpl=DIARY_TEMPLATES[key];
+  document.getElementById('diary-template-hint').textContent=tpl.hint;
+  document.getElementById('diary-text').placeholder=tpl.placeholder;
+}
+
+function renderDiaryStats(){
+  const entries=getDiaryEntries();
+  const thisMonth=todayStr().slice(0,7);
+  const monthEntries=entries.filter(e=>e.date.startsWith(thisMonth));
+  const moodCounts={};
+  monthEntries.forEach(e=>{moodCounts[e.moodKey]=(moodCounts[e.moodKey]||0)+1;});
+  const total=monthEntries.length;
+  const moods=getMoods();
+  // 饼图
+  let pieHtml='';
+  if(total>0){
+    const mc=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1]);
+    const pieColors=['#D4A0A0','#7A9CA5','#B0A0C4','#C4B080','#A0B4C4','#A0C4A0','#C4A0A0','#A0A0C4'];
+    let acc=0,grad='';
+    mc.forEach(([m,c],i)=>{const p=c/total*100;grad+=`${pieColors[i%pieColors.length]} ${acc}% ${acc+p}%,`;acc+=p;});
+    const topMood=moods.find(m=>m.emoji===mc[0][0])||{emoji:mc[0][0],name:mc[0][0]};
+    pieHtml=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;"><div style="width:60px;height:60px;border-radius:50%;background:conic-gradient(${grad.slice(0,-1)});flex-shrink:0;"></div><div><div style="font-size:13px;color:var(--title);font-weight:700;">本月 ${total} 篇日记</div><div style="font-size:12px;color:var(--muted);">最常出现: ${topMood.emoji} ${topMood.name}</div></div></div>`;
+  }else{pieHtml='<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px;">本月还没有日记</div>';}
+  // 周趋势
+  const weekData=getWeekTrend(entries);
+  const trendHtml=`<div class="trend-bar">${weekData.map(d=>`<div class="trend-item"><div class="trend-col" style="height:${d.pct}%;background:${d.color};"></div><div class="trend-label">${d.day}</div></div>`).join('')}</div>`;
+  document.getElementById('diary-stats').innerHTML=pieHtml+trendHtml;
+}
+
+function getWeekTrend(entries){
+  const days=['日','一','二','三','四','五','六'];
+  const today=new Date();
+  const data=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(today);d.setDate(d.getDate()-i);
+    const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const count=entries.filter(e=>e.date===ds).length;
+    data.push({day:days[d.getDay()],count,ds});
+  }
+  const max=Math.max(...data.map(d=>d.count),1);
+  const todayStrVal=todayStr();
+  return data.map(d=>({day:d.day,pct:d.count/max*100,color:d.ds===todayStrVal?'#E07A6B':'#C4D4D4'}));
+}
+
+function renderDiaryReview(){
+  const entries=getDiaryEntries();
+  if(!entries.length){document.getElementById('diary-review').innerHTML='';return;}
+  let html='';
+  // 去年的今天
+  const now=new Date();
+  const lastYear=`${now.getFullYear()-1}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const lastYearEntries=entries.filter(e=>e.date===lastYear);
+  if(lastYearEntries.length){
+    html+=`<div class="review-card"><div class="review-title">📅 去年的今天</div>${lastYearEntries.map(e=>`<div class="diary-text" style="margin-bottom:6px;"><span class="diary-mood">${e.moodKey}</span> ${e.text}</div>`).join('')}</div>`;
+  }
+  // 随机回顾
+  const random=entries[Math.floor(Math.random()*entries.length)];
+  html+=`<div class="review-card" style="background:var(--card);border:1px solid var(--border);"><div class="review-title" style="color:var(--brand);">🎲 随机回顾</div><div class="diary-date">${random.date} <span class="diary-mood">${random.moodKey}</span></div><div class="diary-text">${random.text}</div></div>`;
+  document.getElementById('diary-review').innerHTML=html;
+}
+
+function renderDiaryList(){
+  const entries=getDiaryEntries().slice(-15).reverse();
+  const moods=getMoods();
+  document.getElementById('diary-list').innerHTML=entries.map(e=>{
+    const m=moods.find(x=>x.emoji===e.moodKey)||{emoji:e.moodKey,name:''};
+    const tagHtml=e.tags.length?`<div class="diary-tags">${e.tags.map(t=>`<span class="diary-tag">${t}</span>`).join('')}</div>`:'';
+    return `<div class="diary-entry"><div class="diary-date">${e.date} <span class="diary-mood">${m.emoji}</span> <span style="font-size:12px;color:#78909e;">${m.name}</span></div><div class="diary-text">${e.text}</div>${tagHtml}<button onclick="deleteDiary('${e.id}')" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:14px;color:var(--error);cursor:pointer;padding:2px 6px;">🗑</button></div>`;
+  }).join('');
+}
+
+function addDiary(){
+  const text=document.getElementById('diary-text').value.trim();
+  if(!text){alert('写点什么吧');return;}
+  const rawTags=document.getElementById('diary-tags-input').value.trim();
+  const tags=rawTags?rawTags.split(/\s+/).map(t=>t.startsWith('#')?t:'#'+t).filter(t=>t.length>1):[];
+  const entries=getDiaryEntries();
+  entries.push({id:'diary_'+Date.now(),moodKey:diaryState.selectedMood||'😐',text,date:todayStr(),tags,template:diaryState.template});
+  LS.set('diary_entries',entries);
+  document.getElementById('diary-text').value='';
+  document.getElementById('diary-tags-input').value='';
+  diaryState.selectedMood='';
+  renderDiary();
+}
+
+function deleteDiary(id){
+  if(!confirm('确定删除这篇日记？'))return;
+  let entries=getDiaryEntries();
+  entries=entries.filter(e=>e.id!==id);
+  LS.set('diary_entries',entries);
+  renderDiary();
+}
+
+// 应用锁
+function toggleDiaryLock(){
+  const hasPin=LS.get('diary_lock_pin','');
+  if(!hasPin){if(confirm('还没有设置密码，是否现在设置？')){showLock(true);}}else{showLock(true);}
+}
+
+function showLock(isSetup){
+  const overlay=document.getElementById('diary-lock');
+  overlay.style.display='flex';
+  diaryState.lockCode='';
+  updateLockDots();
+  const hint=document.getElementById('lock-hint');
+  const btn=document.getElementById('lock-setup-btn');
+  const hasPin=LS.get('diary_lock_pin','');
+  if(isSetup&&!hasPin){hint.textContent='请设置4位密码';btn.style.display='none';diaryState.isLocked=false;}
+  else if(!hasPin){hint.textContent='请先设置密码';btn.style.display='inline';btn.textContent='设置密码';overlay.querySelector('.lock-keypad').style.display='none';}
+  else{hint.textContent='请输入4位密码';btn.style.display='none';overlay.querySelector('.lock-keypad').style.display='grid';diaryState.isLocked=true;}
+}
+
+function setupLock(){
+  document.getElementById('lock-hint').textContent='请设置4位密码';
+  document.getElementById('diary-lock').querySelector('.lock-keypad').style.display='grid';
+  document.getElementById('lock-setup-btn').style.display='none';
+  diaryState.isLocked=false;diaryState.lockCode='';updateLockDots();
+}
+
+function pressLockKey(n){
+  if(diaryState.lockCode.length>=4)return;
+  diaryState.lockCode+=n;updateLockDots();
+  if(diaryState.lockCode.length===4){
+    const hasPin=LS.get('diary_lock_pin','');
+    if(!hasPin){LS.set('diary_lock_pin',diaryState.lockCode);alert('密码设置成功！');document.getElementById('diary-lock').style.display='none';}
+    else if(diaryState.lockCode===hasPin){document.getElementById('diary-lock').style.display='none';}
+    else{setTimeout(()=>{diaryState.lockCode='';updateLockDots();document.getElementById('lock-hint').textContent='密码错误，请重试';},200);}
+  }
+}
+
+function backLock(){diaryState.lockCode=diaryState.lockCode.slice(0,-1);updateLockDots();}
+function clearLock(){diaryState.lockCode='';updateLockDots();}
+function updateLockDots(){
+  document.querySelectorAll('#lock-dots .lock-dot').forEach((d,i)=>{d.classList.toggle('filled',i<diaryState.lockCode.length);});
+}
+
+// 导出
+function openDiaryExport(){
+  const entries=getDiaryEntries();
+  if(!entries.length){alert('还没有日记可以导出');return;}
+  const months=[...new Set(entries.map(e=>e.date.slice(0,7)))].sort();
+  const s1=document.getElementById('diary-export-start');
+  const s2=document.getElementById('diary-export-end');
+  const opts=months.map(m=>`<option value="${m}">${m}</option>`).join('');
+  s1.innerHTML=opts;s2.innerHTML=opts;
+  if(months.length){s1.value=months[0];s2.value=months[months.length-1];}
+  const moods=[...new Set(entries.map(e=>e.moodKey))];
+  const moodOpts=moods.map(m=>`<option value="${m}">${m}</option>`).join('');
+  document.getElementById('diary-export-mood').innerHTML='<option value="all">全部心情</option>'+moodOpts;
+  document.getElementById('diary-export-panel').style.display='block';
+}
+
+function doDiaryExport(){
+  const entries=getDiaryEntries();
+  const sm=document.getElementById('diary-export-start').value;
+  const em=document.getElementById('diary-export-end').value;
+  const moodFilter=document.getElementById('diary-export-mood').value;
+  if(sm>em){alert('开始月份不能晚于结束月份');return;}
+  let filtered=entries.filter(e=>{const m=e.date.slice(0,7);return m>=sm&&m<=em;});
+  if(moodFilter!=='all')filtered=filtered.filter(e=>e.moodKey===moodFilter);
+  if(!filtered.length){alert('该范围内没有日记');return;}
+  const moods=getMoods();
+  const text=filtered.sort((a,b)=>a.date.localeCompare(b.date)).map(e=>{
+    const m=moods.find(x=>x.emoji===e.moodKey)||{emoji:e.moodKey,name:''};
+    const tagStr=e.tags.length?` [${e.tags.join(' ')}]`:'';
+    return `[${e.date}] ${m.emoji}${m.name}${tagStr}\n${e.text}\n`;
+  }).join('\n---\n\n');
+  const blob=new Blob(['\uFEFF'+text],{type:'text/plain;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`日记_${sm}_${em}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('diary-export-panel').style.display='none';
+}
+
+// ==================== 初始化 ====================
+renderAccount();
+renderDance();
+renderLangHome();
+renderAlbum();
+// 首次使用时添加示例日程
+if(!LS.get('schedules',null)){
+  LS.set('schedules',[
+    {id:'sch_demo_1',date:todayStr(),time:'09:00',title:'早会',cat:'work',note:'汇报昨日进度',repeat:'workdays',remindBefore:5,remindEnabled:true},
+    {id:'sch_demo_2',date:todayStr(),time:'18:00',title:'晚会',cat:'work',note:'总结今日工作',repeat:'workdays',remindBefore:0,remindEnabled:false},
+    {id:'sch_demo_3',date:todayStr(),time:'20:00',title:'亲子时间',cat:'life',note:'陪宝宝读绘本',repeat:'daily',remindBefore:0,remindEnabled:false},
+    {id:'sch_demo_4',date:todayStr(),time:'07:00',title:'晨间瑜伽',cat:'sports',note:'15分钟拉伸',repeat:'daily',remindBefore:15,remindEnabled:true}
+  ]);
+}
+renderSchedule();
+// 首次使用时添加示例日记
+if(!LS.get('diary_entries',null)){
+  const y=new Date();
+  const ds=(off)=>{const d=new Date(y);d.setDate(d.getDate()-off);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+  LS.set('diary_entries',[
+    {id:'diary_seed_1',moodKey:'🥰',text:'今天过得特别充实，早上完成了运动打卡，下午带宝宝去公园玩了',date:ds(2),tags:['#亲子','#运动'],template:'free'},
+    {id:'diary_seed_2',moodKey:'😊',text:'读完了《蛤蟆先生去看心理医生》，很有收获。推荐大家读一读。',date:ds(3),tags:['#阅读'],template:'free'},
+    {id:'diary_seed_3',moodKey:'😔',text:'今天工作不太顺利，被领导说了一顿。不过没关系，明天继续努力。',date:ds(5),tags:['#工作'],template:'reflect'},
+    {id:'diary_seed_4',moodKey:'😄',text:'1. 感谢今天的好天气\n2. 感谢同事的帮助\n3. 感谢家人的陪伴',date:ds(7),tags:['#感恩'],template:'gratitude'},
+    {id:'diary_seed_5',moodKey:'😴',text:'今天太累了，但是充实的一天。早点休息吧。',date:ds(1),tags:[],template:'free'}
+  ]);
+}
+renderDiary();
+
+// ==================== PWA Service Worker 注册 ====================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
