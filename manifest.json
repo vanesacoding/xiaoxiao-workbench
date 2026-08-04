@@ -1,11 +1,11 @@
 {
-  "name": "小小的工作台",
-  "short_name": "小小工作台",
-  "description": "记账 · 跳舞 · 语言 · 日程 · 开心 · 日记",
+  "name": "小世界",
+  "short_name": "小世界",
+  "description": "记账 · 日程 · 宝宝 · 日记 · 跳舞 · 语言 · 宠物",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#e8f5f9",
-  "theme_color": "#80cbc4",
+  "background_color": "#F5F5F0",
+  "theme_color": "#7A9CA5",
   "orientation": "portrait",
   "icons": [
     {

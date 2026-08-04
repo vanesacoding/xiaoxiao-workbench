@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="小小工作台">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
-<title>小小的工作台</title>
+<title>小世界</title>
   <style>
     :root {
       --brand:#7A9CA5;
@@ -520,7 +520,7 @@
     <div class="page active" id="page-home">
       <div style="text-align:center;padding:60px 20px;">
         <div style="font-size:64px;margin-bottom:16px;">🌿</div>
-        <div style="font-size:24px;font-weight:800;color:var(--brand);margin-bottom:8px;">小小的工作台</div>
+        <div style="font-size:24px;font-weight:800;color:var(--brand);margin-bottom:8px;">小世界</div>
         <div style="font-size:14px;color:var(--muted);line-height:1.8;">
           记账 · 跳舞 · 语言<br>
           日程 · 开心 · 日记
@@ -826,6 +826,7 @@
         </div>
         <div class="page-header-actions">
           <button onclick="openPetForm()" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px;">➕</button>
+          <button onclick="openPetExport()" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px;">📤</button>
         </div>
       </div>
       <div class="card" id="pet-profile" style="text-align:center;">
@@ -839,11 +840,28 @@
         <input class="input" id="pet-breed-input" placeholder="品种（可选）" style="margin-bottom:8px;">
       </div>
       <div class="card">
-        <div class="section-title">📝 宠物日记</div>
+        <div class="section-title">📸 添加照片日记</div>
+        <div id="pet-form-photos" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+        <input type="file" id="pet-entry-photo" accept="image/*" multiple style="display:none;" onchange="onPetEntryPhotoChange(this)">
+        <button class="btn" onclick="document.getElementById('pet-entry-photo').click()" style="width:100%;margin-bottom:8px;background:var(--tag-bg);color:var(--brand);box-shadow:none;">+ 添加照片</button>
         <textarea class="input" id="pet-entry-text" placeholder="今天和宝贝的趣事..." rows="3" style="margin-bottom:8px;"></textarea>
         <button class="btn" onclick="addPetEntry()" style="width:100%;">+ 记录</button>
       </div>
       <div id="pet-timeline"></div>
+      <div class="card" id="pet-export" style="display:none;">
+        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">📄 导出设置</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <select class="input" id="pet-pdf-start-month" style="flex:1;margin-bottom:0;"></select>
+          <span style="align-self:center;color:var(--muted);">至</span>
+          <select class="input" id="pet-pdf-end-month" style="flex:1;margin-bottom:0;"></select>
+        </div>
+        <input class="input" id="pet-pdf-title" placeholder="封面标题（可选）" style="margin-bottom:10px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button class="btn" onclick="doExportPetPDF()" style="flex:1;">📄 PDF导出</button>
+          <button class="btn" onclick="doExportPetAlbumBook()" style="flex:1;">📖 宠物相册</button>
+        </div>
+        <button class="btn" onclick="document.getElementById('pet-export').style.display='none'" style="width:100%;background:var(--tag-bg);color:var(--body);box-shadow:none;">取消</button>
+      </div>
     </div>
 
     <!-- ====== 自定义 ====== -->
@@ -1072,7 +1090,8 @@ function navTo(pageKey){
   document.querySelectorAll('.nav-item').forEach(n=>{
     if(n.getAttribute('data-page')===pageKey) n.classList.add('active');
   });
-  if(pageKey==='account') renderAccount();
+  if(pageKey==='home') renderHomeModuleList();
+  else if(pageKey==='account') renderAccount();
   else if(pageKey==='dance') renderDance();
   else if(pageKey==='language') renderLangHome();
   else if(pageKey==='schedule') renderSchedule();
@@ -1945,7 +1964,17 @@ function finishDrill(){
     </div>`).join('');
   }
 
-  html += `<button class="btn" onclick="closeLangResult();renderLangDetail('${lang}');" style="width:100%;margin-top:16px;">继续学习</button>`;
+  const nextLessonIdx = (langState.lessonIdx||0) + 1;
+  const lessons = getLessons(lang, langState.level);
+  const hasNext = nextLessonIdx < lessons.length;
+  html += `<div style="display:flex;gap:8px;margin-top:16px;">`;
+  html += `<button class="btn" onclick="closeLangResult();renderLangDetail('${lang}');" style="flex:1;background:var(--tag-bg);color:var(--body);box-shadow:none;">返回关卡</button>`;
+  if(hasNext){
+    html += `<button class="btn" onclick="closeLangResult();startLesson('${lang}',${nextLessonIdx});" style="flex:1;">继续下一关 ➜</button>`;
+  } else {
+    html += `<button class="btn" onclick="closeLangResult();startLesson('${lang}',0);" style="flex:1;">重新挑战全部 🔄</button>`;
+  }
+  html += `</div>`;
 
   document.getElementById('lang-result-content').innerHTML = html;
   document.getElementById('lang-overlay').classList.add('active');
@@ -2351,6 +2380,89 @@ function doExportAlbumBook(){
 }
 
 
+
+// ==================== 首页动态模块列表 + 更新检测 ====================
+function renderHomeModuleList(){
+  const container = document.getElementById('home-module-list');
+  if(!container) return;
+  const keys = getNavConfig();
+  const moduleDescs = {
+    account: {title:'猪猪记账本', icon:'💰', desc:'记录每一笔收支，管理预算，掌控生活开销'},
+    dance: {title:'舞蹈练习', icon:'💃', desc:'记录每次练习，追踪进度，见证成长'},
+    language: {title:'语言学习', icon:'🌍', desc:'多语种词汇打卡，闯关式学习，每天进步一点点'},
+    schedule: {title:'生活日程', icon:'📅', desc:'管理日常安排，支持导入手机日历提醒'},
+    album: {title:'宝宝成长日记', icon:'📷', desc:'记录宝宝成长的每个瞬间，生成精美相册'},
+    diary: {title:'我的日记', icon:'🌙', desc:'写下每天的心情与故事，支持心情统计'},
+    pet: {title:'我的宠物', icon:'🐾', desc:'记录宠物日常，生成线条画标志'},
+  };
+  container.innerHTML = keys.map(k=>{
+    const m = moduleDescs[k];
+    if(!m) return '';
+    return `<div class="card" style="display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="navTo('${k}')">
+      <div style="width:44px;height:44px;border-radius:10px;background:var(--brand-light);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${m.icon}</div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:600;color:var(--title);">${m.title}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${m.desc}</div>
+      </div>
+      <div style="color:var(--hint);font-size:16px;">›</div>
+    </div>`;
+  }).join('');
+}
+
+let lastKnownVersion = null;
+async function checkForUpdate(){
+  try {
+    if('serviceWorker' in navigator){
+      const reg = await navigator.serviceWorker.getRegistration();
+      if(reg){
+        const updateFound = await reg.update();
+        // Check if there's a waiting service worker
+        if(reg.waiting){
+          showUpdateBanner();
+        }
+      }
+    }
+    // Also check by fetching the file version
+    const resp = await fetch('index.html?_t=' + Date.now(), {cache:'no-cache'});
+    const text = await resp.text();
+    const match = text.match(/CACHE_VERSION.*?'(v[^']+)'/);
+    if(match){
+      const newVer = match[1];
+      if(lastKnownVersion && lastKnownVersion !== newVer){
+        showUpdateBanner();
+      }
+      lastKnownVersion = newVer;
+    }
+  }catch(e){
+    // Silently fail
+  }
+}
+
+function showUpdateBanner(){
+  const banner = document.getElementById('update-banner');
+  if(banner) banner.style.display = 'block';
+}
+
+function forceUpdateApp(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistration().then(reg=>{
+      if(reg && reg.waiting){
+        reg.waiting.postMessage({action:'skipWaiting'});
+      }
+    });
+  }
+  // Force reload
+  window.location.reload();
+}
+
+// Check for updates on page load and when page becomes visible
+window.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && document.getElementById('page-home').classList.contains('active')){
+    checkForUpdate();
+  }
+});
+
+
 // ==================== 宠物模块 ====================
 function getPetProfile(){
   return LS.get('pet_profile', {name:'', breed:'', lineart:null, photo:null});
@@ -2376,7 +2488,7 @@ function generatePetLineart(imgData){
   img.onload = ()=>{
     const canvas = document.getElementById('pet-lineart-canvas');
     if(!canvas) return;
-    const maxSize = 300;
+    const maxSize = 400;
     let w = img.width, h = img.height;
     if(w > maxSize || h > maxSize){
       if(w >= h){ h = Math.round(h*maxSize/w); w = maxSize; }
@@ -2385,42 +2497,75 @@ function generatePetLineart(imgData){
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
 
-    // Sobel edge detection for line art
+    // Step 1: Draw and get grayscale
+    ctx.drawImage(img, 0, 0, w, h);
     const imageData = ctx.getImageData(0, 0, w, h);
     const data = imageData.data;
     const gray = new Float32Array(w * h);
     for(let i = 0; i < w * h; i++){
-      const r = data[i*4], g = data[i*4+1], b = data[i*4+2];
-      gray[i] = 0.299*r + 0.587*g + 0.114*b;
+      gray[i] = 0.299*data[i*4] + 0.587*data[i*4+1] + 0.114*data[i*4+2];
     }
 
-    const edges = new Float32Array(w * h);
-    for(let y = 1; y < h-1; y++){
-      for(let x = 1; x < w-1; x++){
-        const idx = y * w + x;
-        const gx = -gray[idx-w-1] - 2*gray[idx-1] - gray[idx+w-1]
-                  + gray[idx-w+1] + 2*gray[idx+1] + gray[idx+w+1];
-        const gy = -gray[idx-w-1] - 2*gray[idx-w] - gray[idx-w+1]
-                  + gray[idx+w-1] + 2*gray[idx+w] + gray[idx+w+1];
-        edges[idx] = Math.sqrt(gx*gx + gy*gy);
+    // Step 2: Box blur (acts as cheap Gaussian) - two passes with different radii
+    function boxBlur(src, width, height, radius){
+      const tmp = new Float32Array(width * height);
+      const out = new Float32Array(width * height);
+      // Horizontal pass
+      for(let y = 0; y < height; y++){
+        for(let x = 0; x < width; x++){
+          let sum = 0, count = 0;
+          for(let dx = -radius; dx <= radius; dx++){
+            const nx = x + dx;
+            if(nx >= 0 && nx < width){ sum += src[y*width+nx]; count++; }
+          }
+          tmp[y*width+x] = sum / count;
+        }
       }
+      // Vertical pass
+      for(let y = 0; y < height; y++){
+        for(let x = 0; x < width; x++){
+          let sum = 0, count = 0;
+          for(let dy = -radius; dy <= radius; dy++){
+            const ny = y + dy;
+            if(ny >= 0 && ny < height){ sum += tmp[ny*width+x]; count++; }
+          }
+          out[y*width+x] = sum / count;
+        }
+      }
+      return out;
     }
 
-    // Draw line art
+    const blur1 = boxBlur(gray, w, h, 2);   // Small blur
+    const blur2 = boxBlur(gray, w, h, 8);   // Large blur
+
+    // Step 3: Difference of Gaussians (DoG) - key to soft line art
+    const dog = new Float32Array(w * h);
+    let maxVal = 0, minVal = 999;
+    for(let i = 0; i < w * h; i++){
+      dog[i] = blur1[i] - blur2[i];
+      if(dog[i] > maxVal) maxVal = dog[i];
+      if(dog[i] < minVal) minVal = dog[i];
+    }
+
+    // Step 4: Normalize and apply soft threshold for clean lines
+    const range = maxVal - minVal || 1;
     const output = ctx.createImageData(w, h);
     for(let i = 0; i < w * h; i++){
-      const edge = Math.min(255, edges[i] * 1.5);
-      const inv = 255 - edge;
-      output.data[i*4] = inv;
-      output.data[i*4+1] = inv;
-      output.data[i*4+2] = inv;
+      let val = (dog[i] - minVal) / range;  // 0..1
+      // Soft sigmoid for gentle line falloff
+      val = 1 / (1 + Math.exp(-(val - 0.5) * 6));
+      // Invert: dark lines on white background
+      const lineVal = Math.round(val * 255);
+      // Apply a soft warm tone instead of pure gray
+      output.data[i*4] = Math.round(lineVal * 0.95);     // slightly warm
+      output.data[i*4+1] = Math.round(lineVal * 0.92);
+      output.data[i*4+2] = Math.round(lineVal * 0.88);
       output.data[i*4+3] = 255;
     }
     ctx.putImageData(output, 0, 0);
 
-    // Store the lineart data
+    // Store
     const lineartData = canvas.toDataURL('image/png');
     const profile = getPetProfile();
     profile.lineart = lineartData;
@@ -2501,19 +2646,7 @@ function renderPet(){
   }
 
   // Render timeline
-  const timeline = document.getElementById('pet-timeline');
-  if(!timeline) return;
-  if(!entries.length){
-    timeline.innerHTML = '<div style="text-align:center;color:var(--hint);padding:20px;">还没有宠物日记，点击上方「+ 记录」开始吧</div>';
-    return;
-  }
-  timeline.innerHTML = entries.slice().reverse().map(e=>`
-    <div class="pet-entry">
-      <div class="pet-entry-date">${e.date}</div>
-      <div class="pet-entry-text">${e.text}</div>
-      <button onclick="deletePetEntry('${e.id}')" style="background:none;border:none;color:var(--error);font-size:14px;cursor:pointer;margin-top:6px;">删除</button>
-    </div>
-  `).join('');
+  renderPetTimeline(entries);
 }
 
 function openPetForm(){
@@ -2551,6 +2684,211 @@ function exportScheduleToCalendar(){
   a.click();
   URL.revokeObjectURL(url);
 }
+
+
+let tempPetPhotos = [];
+
+function onPetEntryPhotoChange(input){
+  const files = Array.from(input.files).slice(0, 9 - tempPetPhotos.length);
+  if(!files.length) return;
+  let loaded = 0;
+  files.forEach(file=>{
+    compressImage(file, 800, 0.7, data=>{
+      tempPetPhotos.push(data);
+      loaded++;
+      if(loaded === files.length) renderPetFormPhotos();
+    });
+  });
+  input.value = '';
+}
+
+function renderPetFormPhotos(){
+  const container = document.getElementById('pet-form-photos');
+  if(!container) return;
+  container.innerHTML = tempPetPhotos.map((p, i) =>
+    `<div style="position:relative;width:60px;height:60px;">
+      <img src="${p}" style="width:60px;height:60px;border-radius:6px;object-fit:cover;">
+      <button onclick="tempPetPhotos.splice(${i},1);renderPetFormPhotos();" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--error);color:#fff;border:none;font-size:10px;cursor:pointer;">×</button>
+    </div>`
+  ).join('');
+}
+
+function addPetEntry(){
+  const text = document.getElementById('pet-entry-text').value.trim();
+  if(!text && !tempPetPhotos.length){ alert('写点什么或添加照片吧'); return; }
+  const entries = getPetEntries();
+  entries.push({ id:'pet_'+Date.now(), text, photos:[...tempPetPhotos], date: todayStr() });
+  const ok = LS.set('pet_entries', entries);
+  if(!ok){ alert('保存失败：照片太大，请减少照片数量'); return; }
+  tempPetPhotos = [];
+  document.getElementById('pet-entry-text').value = '';
+  renderPetFormPhotos();
+  renderPet();
+}
+
+function deletePetEntry(id){
+  if(!confirm('确定删除这条记录吗？')) return;
+  const entries = getPetEntries().filter(e=>e.id !== id);
+  LS.set('pet_entries', entries);
+  renderPet();
+}
+
+function renderPetTimeline(entries){
+  const timeline = document.getElementById('pet-timeline');
+  if(!timeline) return;
+  if(!entries.length){
+    timeline.innerHTML = '<div style="text-align:center;color:var(--hint);padding:20px;">还没有宠物日记，点击上方「+ 记录」开始吧</div>';
+    return;
+  }
+  timeline.innerHTML = entries.slice().reverse().map(e=>{
+    const photoHtml = e.photos && e.photos.length ?
+      `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:8px;">
+        ${e.photos.map(p=>`<img src="${p}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;">`).join('')}
+      </div>` : '';
+    return `<div class="pet-entry">
+      <div class="pet-entry-date">${e.date}</div>
+      ${photoHtml}
+      ${e.text ? `<div class="pet-entry-text">${e.text}</div>` : ''}
+      <button onclick="deletePetEntry('${e.id}')" style="background:none;border:none;color:var(--error);font-size:14px;cursor:pointer;margin-top:6px;">删除</button>
+    </div>`;
+  }).join('');
+}
+
+function openPetExport(){
+  const entries = getPetEntries();
+  if(!entries.length){ alert('还没有宠物日记'); return; }
+  const months = [...new Set(entries.map(e=>e.date.slice(0,7)))].sort();
+  const startSel = document.getElementById('pet-pdf-start-month');
+  const endSel = document.getElementById('pet-pdf-end-month');
+  startSel.innerHTML = months.map(m=>`<option value="${m}">${m}</option>`).join('');
+  endSel.innerHTML = months.map(m=>`<option value="${m}">${m}</option>`).join('');
+  endSel.value = months[months.length-1];
+  document.getElementById('pet-export').style.display = 'block';
+}
+
+function doExportPetPDF(){
+  document.getElementById('pet-export').style.display = 'none';
+  const printArea = document.createElement('div');
+  printArea.style.cssText = 'display:none;';
+  const entries = getPetEntries();
+  const startMonth = document.getElementById('pet-pdf-start-month').value;
+  const endMonth = document.getElementById('pet-pdf-end-month').value;
+  const title = document.getElementById('pet-pdf-title').value.trim() || '宠物日记';
+  const filtered = entries.filter(e=>{const m=e.date.slice(0,7);return m>=startMonth&&m<=endMonth;}).sort((a,b)=>a.date.localeCompare(b.date));
+  printArea.innerHTML = `<h1>${title}</h1>${filtered.map(e=>`<div><h3>${e.date}</h3>${e.photos?e.photos.map(p=>`<img src="${p}" style="max-width:300px;">`).join(''):''}<p>${e.text||''}</p></div>`).join('')}`;
+  document.body.appendChild(printArea);
+  printArea.style.display = 'block';
+  document.getElementById('print-area')?.remove();
+  printArea.id = 'print-area';
+  window.print();
+  printArea.remove();
+}
+
+function doExportPetAlbumBook(){
+  const entries = getPetEntries();
+  const startMonth = document.getElementById('pet-pdf-start-month').value;
+  const endMonth = document.getElementById('pet-pdf-end-month').value;
+  const coverTitle = document.getElementById('pet-pdf-title').value.trim() || '宠物成长日记';
+  const filtered = entries.filter(e=>{const m=e.date.slice(0,7);return m>=startMonth&&m<=endMonth;}).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!filtered.length){ alert('该范围内没有日记'); return; }
+  document.getElementById('pet-export').style.display = 'none';
+
+  const totalPhotos = filtered.reduce((s,e)=>s+(e.photos?e.photos.length:0),0);
+  const dateRange = `${filtered[0].date} ~ ${filtered[filtered.length-1].date}`;
+
+  const pagesHtml = filtered.map(e=>{
+    const photoCount = e.photos ? e.photos.length : 0;
+    let photoLayout = '';
+    if(photoCount === 1){
+      photoLayout = `<div class="book-photo-single"><img src="${e.photos[0]}"></div>`;
+    } else if(photoCount === 2){
+      photoLayout = `<div class="book-photo-grid book-grid-2">${e.photos.map(p=>`<img src="${p}">`).join('')}</div>`;
+    } else if(photoCount === 3){
+      photoLayout = `<div class="book-photo-grid book-grid-3">${e.photos.map(p=>`<img src="${p}">`).join('')}</div>`;
+    } else if(photoCount > 3){
+      photoLayout = `<div class="book-photo-grid book-grid-4">${e.photos.slice(0,9).map(p=>`<img src="${p}">`).join('')}</div>`;
+    }
+    const dateObj = new Date(e.date);
+    const monthDay = `${dateObj.getMonth()+1}月${dateObj.getDate()}日`;
+    const weekday = ['日','一','二','三','四','五','六'][dateObj.getDay()];
+    return `<div class="book-page">
+      <div class="book-page-date">${monthDay} <span class="book-weekday">星期${weekday}</span></div>
+      ${photoLayout}
+      ${e.text ? `<div class="book-page-text">${e.text}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>${coverTitle}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#F5F5F0;font-family:'Georgia','STKaiti','楷体','PingFang SC',serif;color:#1A1A1A;line-height:1.8;}
+    .book-container{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;}
+    .book-cover{background:linear-gradient(135deg,#A68B6B,#C4A886);color:#fff;text-align:center;padding:60px 24px 40px;}
+    .book-cover-icon{font-size:48px;margin-bottom:16px;}
+    .book-cover-title{font-size:30px;font-weight:700;margin-bottom:14px;letter-spacing:3px;font-family:'Georgia','STKaiti','楷体',serif;}
+    .book-cover-subtitle{font-size:14px;opacity:0.85;margin-bottom:20px;}
+    .book-cover-stats{font-size:13px;opacity:0.7;border-top:1px solid rgba(255,255,255,0.3);padding-top:16px;display:flex;justify-content:space-around;}
+    .book-cover-stat-num{font-size:20px;font-weight:700;}
+    .book-cover-stat-label{font-size:11px;margin-top:2px;}
+    .book-page{padding:24px 20px;border-bottom:1px solid #F0F0F0;page-break-inside:avoid;}
+    .book-page-date{font-size:16px;font-weight:600;color:#A68B6B;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #F0E8E0;font-family:'Georgia','STKaiti','楷体',serif;}
+    .book-weekday{font-size:12px;color:#B0B0B0;font-weight:400;margin-left:6px;}
+    .book-photo-single{width:100%;border-radius:8px;overflow:hidden;margin-bottom:12px;}
+    .book-photo-single img{width:100%;display:block;border-radius:8px;}
+    .book-photo-grid{display:grid;gap:6px;margin-bottom:12px;}
+    .book-grid-2{grid-template-columns:1fr 1fr;}
+    .book-grid-3{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+    .book-grid-3 img:first-child{grid-row:span 2;}
+    .book-grid-4{grid-template-columns:1fr 1fr 1fr;}
+    .book-photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;display:block;}
+    .book-page-text{font-size:15px;color:#333;line-height:2.0;white-space:pre-wrap;font-family:'STKaiti','楷体','Georgia',serif;}
+    .book-back-cover{text-align:center;padding:40px 20px;color:#B0B0B0;font-size:13px;background:#F5F5F0;}
+    .book-toolbar{position:fixed;top:0;left:0;right:0;background:#fff;border-bottom:1px solid #E0E0E0;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+    .book-toolbar-title{font-size:15px;font-weight:600;color:#333;}
+    .book-toolbar-btns{display:flex;gap:8px;}
+    .book-toolbar-btn{padding:6px 14px;border-radius:6px;border:1px solid #A68B6B;background:#fff;color:#A68B6B;font-size:13px;cursor:pointer;}
+    .book-toolbar-btn:hover{background:#A68B6B;color:#fff;}
+    .book-content{padding-top:50px;}
+    @media print{.book-toolbar{display:none;}.book-content{padding-top:0;}.book-container{max-width:100%;}.book-page{page-break-inside:avoid;}}
+  </style></head><body>
+  <div class="book-toolbar">
+    <span class="book-toolbar-title">📖 ${coverTitle}</span>
+    <div class="book-toolbar-btns">
+      <button class="book-toolbar-btn" onclick="window.print()">📄 打印/存PDF</button>
+      <button class="book-toolbar-btn" onclick="window.close()">关闭</button>
+    </div>
+  </div>
+  <div class="book-content">
+  <div class="book-container">
+    <div class="book-cover">
+      <div class="book-cover-icon">🐾</div>
+      <div class="book-cover-title">${coverTitle}</div>
+      <div class="book-cover-subtitle">${dateRange}</div>
+      <div class="book-cover-stats">
+        <div><div class="book-cover-stat-num">${filtered.length}</div><div class="book-cover-stat-label">篇日记</div></div>
+        <div><div class="book-cover-stat-num">${totalPhotos}</div><div class="book-cover-stat-label">张照片</div></div>
+        <div><div class="book-cover-stat-num">${[...new Set(filtered.map(e=>e.date.slice(0,7)))].length}</div><div class="book-cover-stat-label">个月</div></div>
+      </div>
+    </div>
+    ${pagesHtml}
+    <div class="book-back-cover">— 全书完 —<br>${filtered.length} 篇日记 · ${totalPhotos} 张照片<br>${dateRange}</div>
+  </div>
+  </div>
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){ alert('请允许弹出窗口以查看相册'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
+function openPetForm(){
+  document.getElementById('pet-entry-text').focus();
+  document.getElementById('pet-entry-text').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
 
 // ==================== 生活日程 ====================
 const DEFAULT_SCH_CATS=[
@@ -3020,7 +3358,9 @@ if(!LS.get('diary_entries',null)){
   ]);
 }
 renderNav();
+renderHomeModuleList();
 renderDiary();
+checkForUpdate();
 
 // ==================== PWA Service Worker 注册 ====================
 if ('serviceWorker' in navigator) {
