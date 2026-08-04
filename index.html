@@ -61,6 +61,7 @@
       margin-bottom:20px; cursor:pointer; padding:6px 4px;
       border-radius:8px; width:60px; transition:all 0.2s;
     }
+    .nav-item.active { background:var(--brand-light); box-shadow:inset 3px 0 0 var(--brand), 0 0 12px rgba(122,156,165,0.15); }
     .nav-item.active .nav-icon { color:var(--brand); }
     .nav-item.active .nav-label { color:var(--brand); font-weight:600; }
     .nav-icon {
@@ -940,10 +941,9 @@ document.querySelectorAll('.nav-item').forEach(item=>{
 
 // ==================== 账本 ====================
 const DEFAULT_CATS=[
-  {name:'餐饮',icon:'🍜',color:'#E07A6B'},{name:'交通',icon:'🚗',color:'#6B95A8'},
-  {name:'购物',icon:'🛍️',color:'#9B8BB4'},{name:'娱乐',icon:'🎮',color:'#C4A265'},
-  {name:'护肤',icon:'💄',color:'#D47A8E'},{name:'跳舞',icon:'💃',color:'#8AAA7B'},
-  {name:'其他',icon:'📦',color:'#8d6e63'}
+  {name:'吃饭',icon:'🍜',color:'#E07A6B'},{name:'咖啡',icon:'☕',color:'#A68B6B'},
+  {name:'打车',icon:'🚗',color:'#6B95A8'},{name:'跳舞',icon:'💃',color:'#8AAA7B'},
+  {name:'旅游',icon:'✈️',color:'#9B8BB4'},{name:'购物',icon:'🛍️',color:'#C4A265'}
 ];
 const CAT_ICONS=['🍜','🚗','🛍️','🎮','💄','💃','📦','🏠','📚','💊','🐱','🌿','☕','🍰','✈️','🎁','💻','👗','🎵','🍎'];
 const CAT_COLORS=['#E07A6B','#9B8BB4','#6B95A8','#8AAA7B','#C4A265','#A68B6B','#D47A8E','#6BAAAA','#9B9B9B','#7A8BB4'];
