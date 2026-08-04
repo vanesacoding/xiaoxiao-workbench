@@ -336,7 +336,7 @@
     .lang-home-stats { font-size:11px; color:var(--muted); }
     .lang-home-arrow { font-size:24px; color:var(--hint); flex-shrink:0; font-weight:300; }
 
-    /* ========== 开心成长日记 ========== */
+    /* ========== 宝宝成长日记 ========== */
     .album-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
     .album-card { background:var(--card); border-radius:var(--radius-card); overflow:hidden;
       border:1px solid var(--border); transition:all 0.2s; position:relative;
@@ -379,6 +379,40 @@
     .cloud-wrap { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:10px 0; }
     .cloud-tag { padding:4px 12px; border-radius:var(--radius-btn); font-weight:400; background:var(--brand-light); color:var(--brand); font-size:12px; }
     .entry-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+
+
+    /* ========== 自定义模块 ========== */
+    .custom-module-list { display:flex; flex-direction:column; gap:8px; }
+    .custom-module-item { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--border); border-radius:10px; background:var(--card); transition:all 0.2s; }
+    .custom-module-item.dragging { opacity:0.5; border:2px dashed var(--brand); }
+    .custom-module-item.drag-over { border-color:var(--brand); background:var(--brand-light); }
+    .custom-module-icon { width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px; background:var(--tag-bg); flex-shrink:0; }
+    .custom-module-info { flex:1; }
+    .custom-module-name { font-size:14px; font-weight:600; color:var(--title); }
+    .custom-module-desc { font-size:11px; color:var(--muted); margin-top:2px; }
+    .custom-module-toggle { width:44px; height:24px; border-radius:12px; background:var(--border); position:relative; cursor:pointer; transition:all 0.2s; flex-shrink:0; }
+    .custom-module-toggle.on { background:var(--brand); }
+    .custom-module-toggle::after { content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; transition:all 0.2s; }
+    .custom-module-toggle.on::after { left:22px; }
+    .custom-drag-handle { cursor:grab; color:var(--hint); font-size:16px; padding:4px; flex-shrink:0; }
+    .custom-section-title { font-size:13px; font-weight:600; color:var(--muted); margin:12px 0 8px; text-transform:uppercase; letter-spacing:1px; }
+
+    /* ========== 宠物模块 ========== */
+    .pet-header-img { width:36px; height:36px; border-radius:8px; object-fit:cover; border:1px solid var(--border); }
+    .pet-photo-upload { width:100%; aspect-ratio:1; max-width:200px; border:2px dashed var(--border); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:28px; color:var(--hint); cursor:pointer; margin:0 auto 12px; background:var(--tag-bg); }
+    .pet-lineart-container { text-align:center; margin:16px 0; }
+    .pet-lineart-container canvas { max-width:100%; border-radius:12px; border:1px solid var(--border); background:#fff; }
+    .pet-entry { border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px; background:var(--card); }
+    .pet-entry-img { width:100%; border-radius:8px; margin-bottom:8px; }
+    .pet-entry-date { font-size:11px; color:var(--hint); }
+    .pet-entry-text { font-size:14px; color:var(--body); margin-top:4px; line-height:1.6; }
+
+    /* ========== 日记相册优化 ========== */
+    .book-cover { font-family:'Georgia','STKaiti','楷体',serif !important; }
+    .book-cover-title { font-family:'Georgia','STKaiti','楷体',serif !important; }
+
+    /* Nav reorder drop zones */
+    .nav-item[draggable="true"] { -webkit-user-drag:element; }
 
     /* 移动端适配 */
     @media (max-width:480px) {
@@ -428,7 +462,7 @@
     .cal-dot { width:4px; height:4px; border-radius:50%; background:var(--error); }
     .day-events-title { font-weight:600; font-size:14px; color:var(--title); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
 
-    /* ========== 小小的日记 ========== */
+    /* ========== 我的日记 ========== */
     .mood-selector { display:flex; justify-content:center; gap:18px; margin:14px 0; }
     .mood-btn { font-size:28px; width:44px; height:44px; border-radius:var(--radius-btn); background:var(--card); border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
     .mood-btn:hover { transform:scale(1.1); }
@@ -467,34 +501,15 @@
 <body>
 <div class="phone-frame">
   <!-- 左侧导航栏 -->
-  <div class="sidebar">
-    <div class="nav-item avatar-item active" data-page="home">
+  <div class="sidebar" id="sidebar-nav">
+    <div class="nav-item avatar-item active" data-page="home" onclick="navTo('home')">
       <div class="nav-icon">🌿</div>
-      <div class="nav-label">小小的<br>工作台</div>
+      <div class="nav-label">工作台</div>
     </div>
-    <div class="nav-item" data-page="account">
-      <div class="nav-icon">💰</div>
-      <div class="nav-label">记账</div>
-    </div>
-    <div class="nav-item" data-page="dance">
-      <div class="nav-icon">💃</div>
-      <div class="nav-label">跳舞</div>
-    </div>
-    <div class="nav-item" data-page="language">
-      <div class="nav-icon">🌍</div>
-      <div class="nav-label">语言</div>
-    </div>
-    <div class="nav-item" data-page="schedule">
-      <div class="nav-icon">📅</div>
-      <div class="nav-label">日程</div>
-    </div>
-    <div class="nav-item" data-page="album">
-      <div class="nav-icon">📷</div>
-      <div class="nav-label">开心</div>
-    </div>
-    <div class="nav-item" data-page="diary">
-      <div class="nav-icon">🌙</div>
-      <div class="nav-label">日记</div>
+    <div id="nav-dynamic-items"></div>
+    <div class="nav-item" data-page="customize" onclick="navTo('customize')">
+      <div class="nav-icon">⚙️</div>
+      <div class="nav-label">自定义</div>
     </div>
   </div>
 
@@ -521,7 +536,7 @@
       <div class="page-header">
         <div class="page-header-left">
           <span class="page-title-icon">💰</span>
-          <span class="page-title">小猪记账本</span>
+          <span class="page-title">猪猪记账本</span>
         </div>
         <div class="page-header-actions">
           <span class="streak-badge" id="account-streak">🔥 0 天</span>
@@ -722,12 +737,12 @@
       </div>
     </div>
 
-    <!-- ====== 开心成长日记 ====== -->
+    <!-- ====== 宝宝成长日记 ====== -->
     <div class="page" id="page-album">
       <div class="page-header">
         <div class="page-header-left">
           <span class="page-title-icon">📷</span>
-          <span class="page-title">开心成长日记</span>
+          <span class="page-title">宝宝成长日记</span>
         </div>
       </div>
 
@@ -801,6 +816,57 @@
       <div id="album-timeline"></div>
           </div>
 
+
+    <!-- ====== 宠物 ====== -->
+    <div class="page" id="page-pet">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="page-title-icon">🐾</span>
+          <span class="page-title">我的宠物</span>
+        </div>
+        <div class="page-header-actions">
+          <button onclick="openPetForm()" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px;">➕</button>
+        </div>
+      </div>
+      <div class="card" id="pet-profile" style="text-align:center;">
+        <div class="pet-photo-upload" id="pet-photo-zone" onclick="document.getElementById('pet-photo-input').click()">📷</div>
+        <input type="file" id="pet-photo-input" accept="image/*" style="display:none;" onchange="onPetPhotoChange(this)">
+        <div id="pet-lineart-area" style="display:none;">
+          <div class="pet-lineart-container"><canvas id="pet-lineart-canvas"></canvas></div>
+          <button class="btn" onclick="savePetLineart()" style="width:100%;margin-bottom:8px;">✓ 设为宠物标志</button>
+        </div>
+        <input class="input" id="pet-name-input" placeholder="宠物名字" style="margin-bottom:8px;">
+        <input class="input" id="pet-breed-input" placeholder="品种（可选）" style="margin-bottom:8px;">
+      </div>
+      <div class="card">
+        <div class="section-title">📝 宠物日记</div>
+        <textarea class="input" id="pet-entry-text" placeholder="今天和宝贝的趣事..." rows="3" style="margin-bottom:8px;"></textarea>
+        <button class="btn" onclick="addPetEntry()" style="width:100%;">+ 记录</button>
+      </div>
+      <div id="pet-timeline"></div>
+    </div>
+
+    <!-- ====== 自定义 ====== -->
+    <div class="page" id="page-customize">
+      <div class="page-header">
+        <div class="page-header-left">
+          <span class="page-title-icon">⚙️</span>
+          <span class="page-title">自定义工作台</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="custom-section-title">📌 已启用模块（拖动排序）</div>
+        <div class="custom-module-list" id="custom-enabled-list"></div>
+      </div>
+      <div class="card">
+        <div class="custom-section-title">📦 可选模块</div>
+        <div class="custom-module-list" id="custom-available-list"></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;padding:12px;">
+        长按模块拖动可调整顺序 · 点击开关启用/禁用
+      </div>
+    </div>
+
     <!-- ====== 生活日程 ====== -->
     <div class="page" id="page-schedule">
       <div class="page-header">
@@ -855,7 +921,7 @@
           <option value="5">提前5分钟</option>
           <option value="15">提前15分钟</option>
         </select>
-        <button class="btn" onclick="addSchedule()" style="width:100%;">+ 添加</button>
+        <button class="btn" onclick="addSchedule()" style="width:100%;margin-bottom:8px;">+ 添加</button>\n        <button class="btn" onclick="exportScheduleToCalendar()" style="width:100%;background:var(--tag-bg);color:var(--brand);box-shadow:none;">📅 导入手机日历（闹钟提醒）</button>
       </div>
           </div>
 
@@ -879,7 +945,7 @@
       <div class="page-header">
         <div class="page-header-left">
           <span class="page-title-icon">🌙</span>
-          <span class="page-title">小小的日记</span>
+          <span class="page-title">我的日记</span>
         </div>
         <div class="page-header-actions">
           <button onclick="toggleDiaryLock()">🔒</button>
@@ -936,7 +1002,7 @@
 <!-- PDF打印区域 -->
 <div id="print-area">
   <div style="padding:40px; font-family:sans-serif; color:#333;">
-    <h1 style="text-align:center; color:var(--brand); margin-bottom:30px;">🌿 开心成长日记</h1>
+    <h1 style="text-align:center; color:var(--brand); margin-bottom:30px;">🌿 宝宝成长日记</h1>
     <div id="print-album-content"></div>
   </div>
 </div>
@@ -961,17 +1027,128 @@ document.querySelectorAll('.tab').forEach(tab=>{
     parent.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.dataset.tabContent===tabName));
   });
 });
-document.querySelectorAll('.nav-item').forEach(item=>{
-  item.addEventListener('click',function(){
-    const pageName=this.dataset.page;
-    if(!pageName) return;
-    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    this.classList.add('active');
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    const target=document.getElementById('page-'+pageName);
-    if(target) target.classList.add('active');
+const ALL_MODULES = [
+  {key:'account',icon:'💰',label:'记账',desc:'日常收支记录与预算管理',enabled:true},
+  {key:'schedule',icon:'📅',label:'日程',desc:'生活日程与提醒',enabled:true},
+  {key:'album',icon:'📷',label:'宝宝',desc:'宝宝成长日记与相册',enabled:true},
+  {key:'diary',icon:'🌙',label:'日记',desc:'个人日记与心情记录',enabled:true},
+  {key:'dance',icon:'💃',label:'跳舞',desc:'舞蹈练习记录',enabled:false},
+  {key:'language',icon:'🌍',label:'语言',desc:'多语种词汇打卡',enabled:false},
+  {key:'pet',icon:'🐾',label:'宠物',desc:'宠物日记与线条画',enabled:false},
+];
+
+function getNavConfig(){
+  const saved = LS.get('nav_config', null);
+  if(!saved){
+    return ALL_MODULES.filter(m=>m.enabled).map(m=>m.key);
+  }
+  return saved;
+}
+
+function setNavConfig(keys){
+  LS.set('nav_config', keys);
+  renderNav();
+}
+
+function renderNav(){
+  const keys = getNavConfig();
+  const container = document.getElementById('nav-dynamic-items');
+  if(!container) return;
+  container.innerHTML = keys.map(k=>{
+    const m = ALL_MODULES.find(x=>x.key===k);
+    if(!m) return '';
+    return `<div class="nav-item" data-page="${m.key}" onclick="navTo('${m.key}')">
+      <div class="nav-icon">${m.icon}</div>
+      <div class="nav-label">${m.label}</div>
+    </div>`;
+  }).join('');
+}
+
+function navTo(pageKey){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const page = document.getElementById('page-'+pageKey);
+  if(page) page.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.getAttribute('data-page')===pageKey) n.classList.add('active');
   });
-});
+  if(pageKey==='account') renderAccount();
+  else if(pageKey==='dance') renderDance();
+  else if(pageKey==='language') renderLangHome();
+  else if(pageKey==='schedule') renderSchedule();
+  else if(pageKey==='album') renderAlbum();
+  else if(pageKey==='diary') renderDiary();
+  else if(pageKey==='pet') renderPet();
+  else if(pageKey==='customize') renderCustomize();
+}
+
+function renderCustomize(){
+  const keys = getNavConfig();
+  const enabledList = document.getElementById('custom-enabled-list');
+  const availableList = document.getElementById('custom-available-list');
+  if(!enabledList || !availableList) return;
+
+  enabledList.innerHTML = keys.map(k=>{
+    const m = ALL_MODULES.find(x=>x.key===k);
+    if(!m) return '';
+    return `<div class="custom-module-item" draggable="true" data-key="${k}">
+      <span class="custom-drag-handle">⋮⋮</span>
+      <div class="custom-module-icon">${m.icon}</div>
+      <div class="custom-module-info">
+        <div class="custom-module-name">${m.label}</div>
+        <div class="custom-module-desc">${m.desc}</div>
+      </div>
+      <div class="custom-module-toggle on" onclick="event.stopPropagation();toggleModule('${k}')"></div>
+    </div>`;
+  }).join('');
+
+  const available = ALL_MODULES.filter(m=>!keys.includes(m.key));
+  availableList.innerHTML = available.map(m=>{
+    return `<div class="custom-module-item" data-key="${m.key}">
+      <span class="custom-drag-handle" style="visibility:hidden;">⋮⋮</span>
+      <div class="custom-module-icon">${m.icon}</div>
+      <div class="custom-module-info">
+        <div class="custom-module-name">${m.label}</div>
+        <div class="custom-module-desc">${m.desc}</div>
+      </div>
+      <div class="custom-module-toggle" onclick="event.stopPropagation();toggleModule('${m.key}')"></div>
+    </div>`;
+  }).join('');
+
+  let dragKey = null;
+  enabledList.querySelectorAll('.custom-module-item').forEach(item=>{
+    item.addEventListener('dragstart', e=>{
+      dragKey = item.dataset.key;
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', ()=>{
+      item.classList.remove('dragging');
+      enabledList.querySelectorAll('.custom-module-item').forEach(x=>x.classList.remove('drag-over'));
+    });
+    item.addEventListener('dragover', e=>{ e.preventDefault(); item.classList.add('drag-over'); });
+    item.addEventListener('dragleave', ()=>{ item.classList.remove('drag-over'); });
+    item.addEventListener('drop', e=>{
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      if(dragKey && dragKey !== item.dataset.key){
+        const curKeys = getNavConfig();
+        const fromIdx = curKeys.indexOf(dragKey);
+        const toIdx = curKeys.indexOf(item.dataset.key);
+        curKeys.splice(fromIdx, 1);
+        curKeys.splice(toIdx, 0, dragKey);
+        setNavConfig(curKeys);
+      }
+    });
+  });
+}
+
+function toggleModule(key){
+  const keys = getNavConfig();
+  const idx = keys.indexOf(key);
+  if(idx >= 0){ keys.splice(idx, 1); }
+  else { keys.push(key); }
+  setNavConfig(keys);
+}
 
 // ==================== 账本 ====================
 const DEFAULT_CATS=[
@@ -1500,8 +1677,7 @@ function goToLangDetail(lang) {
 }
 
 function backToLangHome() {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-language').classList.add('active');
+  navTo('language');
   renderLangHome();
 }
 
@@ -1835,7 +2011,7 @@ function calcStreak(records){
   return streak;
 }
 
-// ==================== 开心成长日记 ====================
+// ==================== 宝宝成长日记 ====================
 let tempAlbumPhotos=[],selectedTemplate=null;
 const ALBUM_TEMPLATES={
   food:{icon:'🍜',text:'今天吃到了超好吃的美食！',tags:['#美食']},
@@ -2068,7 +2244,7 @@ function doExportAlbumBook(){
   const entries=getAlbumEntries();
   const startMonth=document.getElementById('pdf-start-month').value;
   const endMonth=document.getElementById('pdf-end-month').value;
-  const coverTitle=document.getElementById('pdf-title').value.trim()||'开心成长日记';
+  const coverTitle=document.getElementById('pdf-title').value.trim()||'宝宝成长日记';
   if(startMonth>endMonth){alert('开始月份不能晚于结束月份');return;}
   const filtered=entries.filter(e=>{const m=e.date.slice(0,7);return m>=startMonth&&m<=endMonth;}).sort((a,b)=>a.date.localeCompare(b.date));
   if(!filtered.length){alert('该范围内没有日记');return;}
@@ -2106,17 +2282,17 @@ function doExportAlbumBook(){
   <title>${coverTitle}</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;}
-    body{background:#F5F5F0;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;color:#1A1A1A;line-height:1.6;}
+    body{background:#F5F5F0;font-family:'Georgia','STKaiti','楷体','PingFang SC',serif;color:#1A1A1A;line-height:1.8;}
     .book-container{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;}
     .book-cover{background:linear-gradient(135deg,#7A9CA5,#A8C4CC);color:#fff;text-align:center;padding:60px 24px 40px;}
     .book-cover-icon{font-size:48px;margin-bottom:16px;}
-    .book-cover-title{font-size:28px;font-weight:700;margin-bottom:12px;letter-spacing:2px;}
+    .book-cover-title{font-size:30px;font-weight:700;margin-bottom:14px;letter-spacing:3px;font-family:'Georgia','STKaiti','楷体',serif;}
     .book-cover-subtitle{font-size:14px;opacity:0.85;margin-bottom:20px;}
     .book-cover-stats{font-size:13px;opacity:0.7;border-top:1px solid rgba(255,255,255,0.3);padding-top:16px;display:flex;justify-content:space-around;}
     .book-cover-stat-num{font-size:20px;font-weight:700;}
     .book-cover-stat-label{font-size:11px;margin-top:2px;}
     .book-page{padding:24px 20px;border-bottom:1px solid #F0F0F0;page-break-inside:avoid;}
-    .book-page-date{font-size:15px;font-weight:600;color:#7A9CA5;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #F0F0F0;}
+    .book-page-date{font-size:16px;font-weight:600;color:#7A9CA5;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #E8F0F0;font-family:'Georgia','STKaiti','楷体',serif;}
     .book-weekday{font-size:12px;color:#B0B0B0;font-weight:400;margin-left:6px;}
     .book-photo-single{width:100%;border-radius:8px;overflow:hidden;margin-bottom:12px;}
     .book-photo-single img{width:100%;display:block;border-radius:8px;}
@@ -2128,7 +2304,7 @@ function doExportAlbumBook(){
     .book-photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;display:block;}
     .book-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
     .book-tag{font-size:11px;padding:2px 8px;border-radius:10px;background:#E8F0F0;color:#7A9CA5;}
-    .book-page-text{font-size:14px;color:#333;line-height:1.8;white-space:pre-wrap;}
+    .book-page-text{font-size:15px;color:#333;line-height:2.0;white-space:pre-wrap;font-family:'STKaiti','楷体','Georgia',serif;}
     .book-back-cover{text-align:center;padding:40px 20px;color:#B0B0B0;font-size:13px;background:#F5F5F0;}
     .book-toolbar{position:fixed;top:0;left:0;right:0;background:#fff;border-bottom:1px solid #E0E0E0;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
     .book-toolbar-title{font-size:15px;font-weight:600;color:#333;}
@@ -2172,6 +2348,208 @@ function doExportAlbumBook(){
   if(!w){alert('请允许弹出窗口以查看相册');return;}
   w.document.write(html);
   w.document.close();
+}
+
+
+// ==================== 宠物模块 ====================
+function getPetProfile(){
+  return LS.get('pet_profile', {name:'', breed:'', lineart:null, photo:null});
+}
+function getPetEntries(){
+  return LS.get('pet_entries', []);
+}
+
+function onPetPhotoChange(input){
+  const file = input.files[0];
+  if(!file) return;
+  compressImage(file, 400, 0.8, data=>{
+    const profile = getPetProfile();
+    profile.photo = data;
+    LS.set('pet_profile', profile);
+    generatePetLineart(data);
+    document.getElementById('pet-lineart-area').style.display = 'block';
+  });
+}
+
+function generatePetLineart(imgData){
+  const img = new Image();
+  img.onload = ()=>{
+    const canvas = document.getElementById('pet-lineart-canvas');
+    if(!canvas) return;
+    const maxSize = 300;
+    let w = img.width, h = img.height;
+    if(w > maxSize || h > maxSize){
+      if(w >= h){ h = Math.round(h*maxSize/w); w = maxSize; }
+      else { w = Math.round(w*maxSize/h); h = maxSize; }
+    }
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    // Sobel edge detection for line art
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
+    const gray = new Float32Array(w * h);
+    for(let i = 0; i < w * h; i++){
+      const r = data[i*4], g = data[i*4+1], b = data[i*4+2];
+      gray[i] = 0.299*r + 0.587*g + 0.114*b;
+    }
+
+    const edges = new Float32Array(w * h);
+    for(let y = 1; y < h-1; y++){
+      for(let x = 1; x < w-1; x++){
+        const idx = y * w + x;
+        const gx = -gray[idx-w-1] - 2*gray[idx-1] - gray[idx+w-1]
+                  + gray[idx-w+1] + 2*gray[idx+1] + gray[idx+w+1];
+        const gy = -gray[idx-w-1] - 2*gray[idx-w] - gray[idx-w+1]
+                  + gray[idx+w-1] + 2*gray[idx+w] + gray[idx+w+1];
+        edges[idx] = Math.sqrt(gx*gx + gy*gy);
+      }
+    }
+
+    // Draw line art
+    const output = ctx.createImageData(w, h);
+    for(let i = 0; i < w * h; i++){
+      const edge = Math.min(255, edges[i] * 1.5);
+      const inv = 255 - edge;
+      output.data[i*4] = inv;
+      output.data[i*4+1] = inv;
+      output.data[i*4+2] = inv;
+      output.data[i*4+3] = 255;
+    }
+    ctx.putImageData(output, 0, 0);
+
+    // Store the lineart data
+    const lineartData = canvas.toDataURL('image/png');
+    const profile = getPetProfile();
+    profile.lineart = lineartData;
+    LS.set('pet_profile', profile);
+  };
+  img.src = imgData;
+}
+
+function savePetLineart(){
+  const profile = getPetProfile();
+  profile.name = document.getElementById('pet-name-input').value.trim();
+  profile.breed = document.getElementById('pet-breed-input').value.trim();
+  LS.set('pet_profile', profile);
+  renderPet();
+  alert('宠物标志已保存！');
+}
+
+function addPetEntry(){
+  const text = document.getElementById('pet-entry-text').value.trim();
+  if(!text){ alert('写点什么吧'); return; }
+  const entries = getPetEntries();
+  entries.push({ id:'pet_'+Date.now(), text, date: todayStr() });
+  const ok = LS.set('pet_entries', entries);
+  if(!ok){ alert('保存失败，请减少内容'); return; }
+  document.getElementById('pet-entry-text').value = '';
+  renderPet();
+}
+
+function deletePetEntry(id){
+  const entries = getPetEntries().filter(e=>e.id !== id);
+  LS.set('pet_entries', entries);
+  renderPet();
+}
+
+function renderPet(){
+  const profile = getPetProfile();
+  const entries = getPetEntries();
+
+  // Update nav icon if lineart exists
+  if(profile.lineart){
+    const petNav = document.querySelector('.nav-item[data-page="pet"] .nav-icon');
+    if(petNav) petNav.innerHTML = `<img src="${profile.lineart}" style="width:24px;height:24px;border-radius:4px;">`;
+  }
+
+  // Update header icon
+  const headerIcon = document.querySelector('#page-pet .page-title-icon');
+  if(headerIcon && profile.lineart){
+    headerIcon.innerHTML = `<img src="${profile.lineart}" style="width:18px;height:18px;border-radius:4px;">`;
+  }
+
+  // Update profile display
+  const nameInput = document.getElementById('pet-name-input');
+  const breedInput = document.getElementById('pet-breed-input');
+  if(nameInput) nameInput.value = profile.name || '';
+  if(breedInput) breedInput.value = profile.breed || '';
+
+  if(profile.photo){
+    const zone = document.getElementById('pet-photo-zone');
+    if(zone){
+      zone.style.background = `url(${profile.photo}) center/cover`;
+      zone.style.border = '1px solid var(--border)';
+      zone.innerHTML = '';
+    }
+  }
+
+  if(profile.lineart){
+    const area = document.getElementById('pet-lineart-area');
+    if(area){
+      area.style.display = 'block';
+      const canvas = document.getElementById('pet-lineart-canvas');
+      if(canvas){
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = ()=>{ ctx.drawImage(img, 0, 0); };
+        img.src = profile.lineart;
+      }
+    }
+  }
+
+  // Render timeline
+  const timeline = document.getElementById('pet-timeline');
+  if(!timeline) return;
+  if(!entries.length){
+    timeline.innerHTML = '<div style="text-align:center;color:var(--hint);padding:20px;">还没有宠物日记，点击上方「+ 记录」开始吧</div>';
+    return;
+  }
+  timeline.innerHTML = entries.slice().reverse().map(e=>`
+    <div class="pet-entry">
+      <div class="pet-entry-date">${e.date}</div>
+      <div class="pet-entry-text">${e.text}</div>
+      <button onclick="deletePetEntry('${e.id}')" style="background:none;border:none;color:var(--error);font-size:14px;cursor:pointer;margin-top:6px;">删除</button>
+    </div>
+  `).join('');
+}
+
+function openPetForm(){
+  document.getElementById('pet-entry-text').focus();
+}
+
+
+function exportScheduleToCalendar(){
+  const schedules = getSchedules();
+  if(!schedules.length){ alert('还没有日程'); return; }
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//XiaoxiaoWorkbench//Schedule//CN\r\n';
+  schedules.forEach(s=>{
+    if(!s.date || !s.time) return;
+    const dt = s.date.replace(/-/g,'') + 'T' + s.time.replace(/:/g,'') + '00';
+    const endDate = dt.slice(0,8) + 'T' + (parseInt(s.time.slice(0,2))+1).toString().padStart(2,'0') + s.time.slice(3) + '00';
+    ics += 'BEGIN:VEVENT\r\n';
+    ics += 'UID:'+s.id+'@xiaoxiao\r\n';
+    ics += 'DTSTART:'+dt+'\r\n';
+    ics += 'DTEND:'+endDate+'\r\n';
+    ics += 'SUMMARY:'+s.title+'\r\n';
+    if(s.note) ics += 'DESCRIPTION:'+s.note+'\r\n';
+    ics += 'BEGIN:VALARM\r\n';
+    ics += 'TRIGGER:-PT'+(s.remindBefore||0)+'M\r\n';
+    ics += 'ACTION:DISPLAY\r\n';
+    ics += 'DESCRIPTION:'+s.title+'提醒\r\n';
+    ics += 'END:VALARM\r\n';
+    ics += 'END:VEVENT\r\n';
+  });
+  ics += 'END:VCALENDAR\r\n';
+  const blob = new Blob([ics], {type:'text/calendar'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '我的日程.ics';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ==================== 生活日程 ====================
@@ -2382,7 +2760,7 @@ function checkReminders(){
 }
 if('Notification' in window&&Notification.permission==='granted'){setupReminders();}
 
-// ==================== 小小的日记 ====================
+// ==================== 我的日记 ====================
 const DEFAULT_MOODS=[
   {emoji:'😊',name:'开心',group:'happy'},{emoji:'🥰',name:'幸福',group:'happy'},{emoji:'😄',name:'兴奋',group:'happy'},
   {emoji:'😢',name:'难过',group:'sad'},{emoji:'😔',name:'失落',group:'sad'},{emoji:'😟',name:'焦虑',group:'sad'},
@@ -2641,6 +3019,7 @@ if(!LS.get('diary_entries',null)){
     {id:'diary_seed_5',moodKey:'😴',text:'今天太累了，但是充实的一天。早点休息吧。',date:ds(1),tags:[],template:'free'}
   ]);
 }
+renderNav();
 renderDiary();
 
 // ==================== PWA Service Worker 注册 ====================
