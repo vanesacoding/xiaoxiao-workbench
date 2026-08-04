@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#7A9CA5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -348,6 +348,14 @@
     .cloud-wrap { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:10px 0; }
     .cloud-tag { padding:4px 12px; border-radius:var(--radius-btn); font-weight:400; background:var(--brand-light); color:var(--brand); font-size:12px; }
     .entry-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+
+    /* 移动端适配 */
+    @media (max-width:480px) {
+      body { overflow:auto; align-items:flex-start; height:100dvh; }
+      .phone-frame { width:100vw; height:100dvh; border-radius:0; box-shadow:none; overflow:visible; }
+      .sidebar { padding-top:max(8px, env(safe-area-inset-top)); padding-bottom:max(8px, env(safe-area-inset-bottom)); }
+      .main-content { padding:max(8px, env(safe-area-inset-top)) 12px max(8px, env(safe-area-inset-bottom)) 8px; }
+    }
 
     /* PDF打印区域 */
     #print-area { display:none; }
