@@ -911,7 +911,7 @@
 // ==================== 工具函数 ====================
 const LS = {
   get:(k,def)=>{ try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;} },
-  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+  set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){console.error('LS save failed',e);return false;} }
 };
 function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function nowTime(){ const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
@@ -1412,7 +1412,16 @@ function startDrill(lang){
   const level = lang==='spanish'?LS.get('lang_level_spanish','A2'):null;
   const vocab = getVocab(lang, level);
   const count = Math.min(LS.get('lang_count_'+lang,10), vocab.length);
-  const selected = shuffle(vocab).slice(0,count);
+  // 优先抽取未练过的单词，让每次题目更随机
+  const practicedKey = 'lang_practiced_'+lang+(level?'_'+level:'');
+  let practiced = LS.get(practicedKey, []);
+  const unpracticed = vocab.filter(w=>!practiced.includes(w.word));
+  let pool = unpracticed.length >= count ? unpracticed : vocab;
+  let selected = shuffle(pool).slice(0,count);
+  // 记录本次练习的单词
+  practiced = [...new Set([...practiced, ...selected.map(w=>w.word)])];
+  if(practiced.length > vocab.length * 2) practiced = practiced.slice(-vocab.length); // 控制记录长度
+  LS.set(practicedKey, practiced);
   langState = { lang, level, count, drillWords:selected, index:0, answers:[], mistakes:[], startTime:Date.now(), answered:false };
   renderDrill();
 }
@@ -1451,8 +1460,11 @@ function renderDrill(){
   }
   else if(qType.type==='fillword'){
     const blanked = w.example.replace(w.word, '_____');
+    const firstChar = w.word.charAt(0);
+    const lenHint = '□'.repeat(w.word.length);
     html += `<div class="drill-sub">${blanked}</div>
-    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;">中文提示：${w.mean}</div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:6px;">中文提示：${w.mean}</div>
+    <div style="text-align:center;font-size:13px;color:var(--brand);margin-bottom:12px;">单词提示：首字母 "${firstChar}" · 共 ${w.word.length} 个字符 · ${lenHint}</div>
     <input class="drill-input" id="fill-input" placeholder="输入单词" onkeydown="if(event.key==='Enter')submitFill()">
     <button class="btn drill-next-btn" onclick="submitFill()">提交</button>`;
   }
@@ -1831,7 +1843,8 @@ function saveAlbumEntry(){
   const tags=rawTags?rawTags.split(/\s+/).map(t=>t.startsWith('#')?t:'#'+t).filter(t=>t.length>1):[];
   const entries=getAlbumEntries();
   entries.push({id:'album_'+Date.now(),photos:tempAlbumPhotos,text,date:todayStr(),tags,template:selectedTemplate});
-  LS.set('album_entries',entries);
+  const ok=LS.set('album_entries',entries);
+  if(!ok){alert('保存失败：照片太大，请减少照片数量或选择更小的图片');return;}
   closeAlbumForm();
   renderAlbum();
 }
