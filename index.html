@@ -542,7 +542,10 @@
           <select id="rec-cat"></select>
         </div>
         <input class="input" id="rec-note" placeholder="备注（可选）">
-        <button class="btn" onclick="addRecord()" style="width:100%;">+ 记一笔</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" id="rec-submit-btn" onclick="addRecord()" style="flex:1;">+ 记一笔</button>
+          <button class="btn" id="rec-cancel-btn" onclick="cancelEdit()" style="flex:1;display:none;background:var(--tag-bg);color:var(--muted);">取消修改</button>
+        </div>
       </div>
 
       <!-- 快捷操作 -->
@@ -985,7 +988,7 @@ function renderAccount(){
   const exportSel=document.getElementById('export-month');
   exportSel.innerHTML=monthArr.length?monthArr.map(m=>`<option value="${m}">${m}</option>`).join('')+'<option value="all">全部月份</option>':'<option value="all">全部月份</option>';
   document.getElementById('account-streak').textContent='🔥 '+calcAccountStreak(records)+' 天';
-  const listHtml=records.slice(-20).reverse().map((r,i)=>{const origIdx=records.length-1-i;const c=cats.find(x=>x.name===r.cat);const chip=c?`<span class="cat-chip" style="background:${c.color}22;color:${c.color};">${c.icon} ${r.cat}</span>`:r.cat;return`<div class="record-item"><div style="display:flex;align-items:center;gap:6px;">${chip} ${r.note||''}<span style="font-size:11px;color:var(--hint);">${r.date}</span></div><div style="display:flex;align-items:center;gap:10px;"><div style="font-weight:700;color:${r.type==='income'?'var(--success)':'var(--error)'}">${r.type==='income'?'+':'-'}¥${r.amount}</div><button onclick="deleteRecord(${origIdx})" style="background:none;border:none;font-size:16px;color:var(--error);cursor:pointer;padding:2px 6px;flex-shrink:0;">🗑</button></div></div>`;}).join('');
+  const listHtml=records.slice(-20).reverse().map((r,i)=>{const origIdx=records.length-1-i;const c=cats.find(x=>x.name===r.cat);const chip=c?`<span class="cat-chip" style="background:${c.color}22;color:${c.color};">${c.icon} ${r.cat}</span>`:r.cat;return`<div class="record-item"><div style="display:flex;align-items:center;gap:6px;">${chip} ${r.note||''}<span style="font-size:11px;color:var(--hint);">${r.date}</span></div><div style="display:flex;align-items:center;gap:10px;"><div style="font-weight:700;color:${r.type==='income'?'var(--success)':'var(--error)'}">${r.type==='income'?'+':'-'}¥${r.amount}</div><button onclick="editRecord(${origIdx})" style="background:none;border:none;font-size:16px;color:var(--brand);cursor:pointer;padding:2px 6px;flex-shrink:0;">✏️</button><button onclick="deleteRecord(${origIdx})" style="background:none;border:none;font-size:16px;color:var(--error);cursor:pointer;padding:2px 6px;flex-shrink:0;">🗑</button></div></div>`;}).join('');
   document.getElementById('record-list').innerHTML=listHtml||'<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">还没有记账记录</div>';
 }
 
@@ -1007,6 +1010,7 @@ function renderRank(catEntries,totalCat,cats){
   document.getElementById('rank-list').innerHTML='<div style="font-weight:600;font-size:13px;color:var(--title);margin-bottom:4px;">🏆 分类支出排行</div>'+catEntries.slice(0,5).map(([cat,val],i)=>{const c=cats.find(x=>x.name===cat);const col=c?c.color:'#9B9B9B';return`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="cat-icon" style="background:${col}22;color:${col};">${c?c.icon:'📦'}</div><div style="font-size:12px;color:var(--title);flex-shrink:0;">${cat}</div><div class="rank-bar"><div class="rank-bar-fill" style="width:${val/totalCat*100}%;background:${col};"></div></div><div style="font-size:12px;font-weight:700;color:var(--title);flex-shrink:0;">¥${val}</div></div>`;}).join('');
 }
 
+let editingRecordIdx=null;
 function addRecord(){
   const type=document.getElementById('rec-type').value;
   const amount=parseFloat(document.getElementById('rec-amount').value);
@@ -1014,11 +1018,39 @@ function addRecord(){
   const note=document.getElementById('rec-note').value;
   if(!amount||amount<=0){alert('请输入金额');return;}
   const records=LS.get('account_records',[]);
-  records.push({date:todayStr(),time:nowTime(),type,amount,cat,note});
+  if(editingRecordIdx!==null){
+    const r=records[editingRecordIdx];
+    r.type=type;r.amount=amount;r.cat=cat;r.note=note;
+    editingRecordIdx=null;
+    document.getElementById('rec-submit-btn').textContent='+ 记一笔';
+    document.getElementById('rec-cancel-btn').style.display='none';
+  }else{
+    records.push({date:todayStr(),time:nowTime(),type,amount,cat,note});
+  }
   LS.set('account_records',records);
   document.getElementById('rec-amount').value='';
   document.getElementById('rec-note').value='';
   renderAccount();
+}
+function editRecord(idx){
+  const records=LS.get('account_records',[]);
+  const r=records[idx];if(!r)return;
+  editingRecordIdx=idx;
+  document.getElementById('rec-type').value=r.type;
+  document.getElementById('rec-amount').value=r.amount;
+  document.getElementById('rec-cat').value=r.cat;
+  document.getElementById('rec-note').value=r.note||'';
+  document.getElementById('rec-submit-btn').textContent='✓ 保存修改';
+  document.getElementById('rec-cancel-btn').style.display='block';
+  document.getElementById('rec-amount').focus();
+  document.querySelector('.record-form').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function cancelEdit(){
+  editingRecordIdx=null;
+  document.getElementById('rec-amount').value='';
+  document.getElementById('rec-note').value='';
+  document.getElementById('rec-submit-btn').textContent='+ 记一笔';
+  document.getElementById('rec-cancel-btn').style.display='none';
 }
 
 function calcAccountStreak(records){
