@@ -783,17 +783,18 @@
 
       <!-- 导出设置 -->
       <div class="card" id="album-export" style="display:none;">
-        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">📄 PDF导出设置</div>
+        <div style="font-weight:700;margin-bottom:10px;color:var(--title);">📄 导出设置</div>
         <div style="display:flex;gap:8px;margin-bottom:10px;">
           <select class="input" id="pdf-start-month" style="flex:1;margin-bottom:0;"></select>
           <span style="align-self:center;color:var(--muted);">至</span>
           <select class="input" id="pdf-end-month" style="flex:1;margin-bottom:0;"></select>
         </div>
         <input class="input" id="pdf-title" placeholder="封面标题（可选）" style="margin-bottom:10px;">
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-blue" onclick="doExportPDF()" style="flex:1;">确认导出</button>
-          <button class="btn" onclick="document.getElementById('album-export').style.display='none'" style="flex:1;background:var(--tag-bg);color:var(--body);box-shadow:none;">取消</button>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button class="btn" onclick="doExportPDF()" style="flex:1;">📄 PDF导出</button>
+          <button class="btn" onclick="doExportAlbumBook()" style="flex:1;">📖 日记相册</button>
         </div>
+        <button class="btn" onclick="document.getElementById('album-export').style.display='none'" style="width:100%;background:var(--tag-bg);color:var(--body);box-shadow:none;">取消</button>
       </div>
 
       <!-- 日记时间轴 -->
@@ -1545,18 +1546,18 @@ function renderDrill(){
     </div>
     <div class="drill-question">听到了什么？</div>
     <div class="drill-sub">选择对应的中文释义</div>
-    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
+    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" data-correct="${o.isCorrect}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
   }
   else if(qType.type==='cn2foreign'){
     html += `<div class="drill-question">${w.mean}</div>
     <div class="drill-sub">选择对应的外文</div>
-    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
+    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" data-correct="${o.isCorrect}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
   }
   else if(qType.type==='foreign2cn'){
     html += `<div class="drill-question">${w.word}</div>
     <div class="wordbook-pron" style="text-align:center;margin-bottom:10px;">${w.pron||''}</div>
     <div class="drill-sub">选择对应的中文释义</div>
-    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
+    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" data-correct="${o.isCorrect}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
   }
   else if(qType.type==='fillword'){
     const blanked = w.example.replace(w.word, '_____');
@@ -1571,7 +1572,7 @@ function renderDrill(){
   else if(qType.type==='selectword'){
     html += `<div class="drill-sub">${qType.blanked}</div>
     <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;">中文提示：${w.mean}</div>
-    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
+    <div class="drill-options">${qType.options.map((o,i)=>`<div class="drill-opt" id="opt-${i}" data-correct="${o.isCorrect}" onclick="submitAnswer(${i},'${o.isCorrect}')">${o.text}</div>`).join('')}</div>`;
   }
   else if(qType.type==='translate'){
     html += `<div class="drill-sub">${w.example}</div>
@@ -1616,11 +1617,20 @@ function pickQuestionType(w, lang, lastType) {
 }
 function speakWord(word,lang){
   const voices = {'korean':'ko-KR','english':'en-US','spanish':'es-ES'};
+  const langCode = voices[lang] || 'en-US';
+  speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(word);
-  u.lang = voices[lang] || 'en-US';
-  u.rate = 0.8;
+  u.lang = langCode;
+  u.rate = 0.85;
+  u.pitch = 1.0;
+  // Try to find a high-quality native voice
+  const allVoices = speechSynthesis.getVoices();
+  const nativeVoice = allVoices.find(v=>v.lang===langCode) || allVoices.find(v=>v.lang.startsWith(langCode.split('-')[0]));
+  if(nativeVoice) u.voice = nativeVoice;
   speechSynthesis.speak(u);
 }
+// Preload voices (some browsers load async)
+if(typeof speechSynthesis!=='undefined'){ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices(); }
 
 function submitAnswer(idx,isCorrect){
   if(langState.answered) return;
@@ -1633,12 +1643,14 @@ function submitAnswer(idx,isCorrect){
     fb.textContent='✅ 正确！'; fb.style.color='var(--success)';
   } else {
     el.classList.add('wrong','animate-shake');
-    fb.textContent='❌ 错误'; fb.style.color='var(--error)';
+    const w=langState.drillWords[langState.index];
+    const correctOpt=document.querySelector('.drill-opt[data-correct="true"]');
+    if(correctOpt) correctOpt.classList.add('correct');
+    fb.innerHTML=`❌ 错误！正确答案：<b>${correctOpt?correctOpt.textContent:''}</b>`; fb.style.color='var(--error)';
     langState.hearts = Math.max(0, langState.hearts - 1);
   }
   langState.answers.push(correct);
   if(!correct) langState.mistakes.push(langState.drillWords[langState.index]);
-  document.querySelectorAll('.drill-opt').forEach(opt=>{ if(opt.textContent===langState.drillWords[langState.index].mean||opt.textContent===langState.drillWords[langState.index].word) opt.classList.add('correct'); });
   if(langState.hearts<=0){ setTimeout(()=>renderGameOver(),1200); return; }
   const card = document.querySelector('.drill-card');
   const btn = document.createElement('button');
@@ -2050,6 +2062,116 @@ function doExportPDF(){
   document.getElementById('print-album-content').innerHTML=coverHtml+printContent;
   document.getElementById('album-export').style.display='none';
   window.print();
+}
+
+function doExportAlbumBook(){
+  const entries=getAlbumEntries();
+  const startMonth=document.getElementById('pdf-start-month').value;
+  const endMonth=document.getElementById('pdf-end-month').value;
+  const coverTitle=document.getElementById('pdf-title').value.trim()||'开心成长日记';
+  if(startMonth>endMonth){alert('开始月份不能晚于结束月份');return;}
+  const filtered=entries.filter(e=>{const m=e.date.slice(0,7);return m>=startMonth&&m<=endMonth;}).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!filtered.length){alert('该范围内没有日记');return;}
+  document.getElementById('album-export').style.display='none';
+
+  const totalPhotos=filtered.reduce((s,e)=>s+e.photos.length,0);
+  const dateRange=`${filtered[0].date} ~ ${filtered[filtered.length-1].date}`;
+
+  const pagesHtml=filtered.map((e,idx)=>{
+    const photoCount=e.photos.length;
+    let photoLayout='';
+    if(photoCount===1){
+      photoLayout=`<div class="book-photo-single"><img src="${e.photos[0]}"></div>`;
+    }else if(photoCount===2){
+      photoLayout=`<div class="book-photo-grid book-grid-2">${e.photos.map(p=>`<img src="${p}">`).join('')}</div>`;
+    }else if(photoCount===3){
+      photoLayout=`<div class="book-photo-grid book-grid-3">${e.photos.map(p=>`<img src="${p}">`).join('')}</div>`;
+    }else{
+      photoLayout=`<div class="book-photo-grid book-grid-4">${e.photos.slice(0,9).map(p=>`<img src="${p}">`).join('')}</div>`;
+    }
+    const tagHtml=e.tags.length?`<div class="book-tags">${e.tags.map(t=>`<span class="book-tag">${t}</span>`).join('')}</div>`:'';
+    const dateObj=new Date(e.date);
+    const monthDay=`${dateObj.getMonth()+1}月${dateObj.getDate()}日`;
+    const weekday=['日','一','二','三','四','五','六'][dateObj.getDay()];
+    return `<div class="book-page">
+      <div class="book-page-date">${monthDay} <span class="book-weekday">星期${weekday}</span></div>
+      ${photoLayout}
+      ${tagHtml}
+      <div class="book-page-text">${e.text}</div>
+    </div>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>${coverTitle}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#F5F5F0;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;color:#1A1A1A;line-height:1.6;}
+    .book-container{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;}
+    .book-cover{background:linear-gradient(135deg,#7A9CA5,#A8C4CC);color:#fff;text-align:center;padding:60px 24px 40px;}
+    .book-cover-icon{font-size:48px;margin-bottom:16px;}
+    .book-cover-title{font-size:28px;font-weight:700;margin-bottom:12px;letter-spacing:2px;}
+    .book-cover-subtitle{font-size:14px;opacity:0.85;margin-bottom:20px;}
+    .book-cover-stats{font-size:13px;opacity:0.7;border-top:1px solid rgba(255,255,255,0.3);padding-top:16px;display:flex;justify-content:space-around;}
+    .book-cover-stat-num{font-size:20px;font-weight:700;}
+    .book-cover-stat-label{font-size:11px;margin-top:2px;}
+    .book-page{padding:24px 20px;border-bottom:1px solid #F0F0F0;page-break-inside:avoid;}
+    .book-page-date{font-size:15px;font-weight:600;color:#7A9CA5;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #F0F0F0;}
+    .book-weekday{font-size:12px;color:#B0B0B0;font-weight:400;margin-left:6px;}
+    .book-photo-single{width:100%;border-radius:8px;overflow:hidden;margin-bottom:12px;}
+    .book-photo-single img{width:100%;display:block;border-radius:8px;}
+    .book-photo-grid{display:grid;gap:6px;margin-bottom:12px;}
+    .book-grid-2{grid-template-columns:1fr 1fr;}
+    .book-grid-3{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+    .book-grid-3 img:first-child{grid-row:span 2;}
+    .book-grid-4{grid-template-columns:1fr 1fr 1fr;}
+    .book-photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;display:block;}
+    .book-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+    .book-tag{font-size:11px;padding:2px 8px;border-radius:10px;background:#E8F0F0;color:#7A9CA5;}
+    .book-page-text{font-size:14px;color:#333;line-height:1.8;white-space:pre-wrap;}
+    .book-back-cover{text-align:center;padding:40px 20px;color:#B0B0B0;font-size:13px;background:#F5F5F0;}
+    .book-toolbar{position:fixed;top:0;left:0;right:0;background:#fff;border-bottom:1px solid #E0E0E0;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+    .book-toolbar-title{font-size:15px;font-weight:600;color:#333;}
+    .book-toolbar-btns{display:flex;gap:8px;}
+    .book-toolbar-btn{padding:6px 14px;border-radius:6px;border:1px solid #7A9CA5;background:#fff;color:#7A9CA5;font-size:13px;cursor:pointer;}
+    .book-toolbar-btn:hover{background:#7A9CA5;color:#fff;}
+    .book-content{padding-top:50px;}
+    @media print{
+      .book-toolbar{display:none;}
+      .book-content{padding-top:0;}
+      .book-container{max-width:100%;}
+      .book-page{page-break-inside:avoid;}
+    }
+  </style></head><body>
+  <div class="book-toolbar">
+    <span class="book-toolbar-title">📖 ${coverTitle}</span>
+    <div class="book-toolbar-btns">
+      <button class="book-toolbar-btn" onclick="window.print()">📄 打印/存PDF</button>
+      <button class="book-toolbar-btn" onclick="window.close()">关闭</button>
+    </div>
+  </div>
+  <div class="book-content">
+  <div class="book-container">
+    <div class="book-cover">
+      <div class="book-cover-icon">🌿</div>
+      <div class="book-cover-title">${coverTitle}</div>
+      <div class="book-cover-subtitle">${dateRange}</div>
+      <div class="book-cover-stats">
+        <div><div class="book-cover-stat-num">${filtered.length}</div><div class="book-cover-stat-label">篇日记</div></div>
+        <div><div class="book-cover-stat-num">${totalPhotos}</div><div class="book-cover-stat-label">张照片</div></div>
+        <div><div class="book-cover-stat-num">${[...new Set(filtered.map(e=>e.date.slice(0,7)))].length}</div><div class="book-cover-stat-label">个月</div></div>
+      </div>
+    </div>
+    ${pagesHtml}
+    <div class="book-back-cover">— 全书完 —<br>${filtered.length} 篇日记 · ${totalPhotos} 张照片<br>${dateRange}</div>
+  </div>
+  </div>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  if(!w){alert('请允许弹出窗口以查看相册');return;}
+  w.document.write(html);
+  w.document.close();
 }
 
 // ==================== 生活日程 ====================
