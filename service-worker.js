@@ -1,10 +1,11 @@
-const CACHE_VERSION = 'v20260805c';
+const CACHE_VERSION = 'v20260806';
 const CACHE_NAME = 'xiaoxiao-workbench-' + CACHE_VERSION;
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './vocab.js'
 ];
 
 self.addEventListener('install', event => {
@@ -42,6 +43,19 @@ self.addEventListener('fetch', event => {
           return response;
         })
         .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+  // For vocab.js, always try network first to get latest words
+  if (event.request.url.includes('vocab.js')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const cloned = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }

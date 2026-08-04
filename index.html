@@ -1416,187 +1416,37 @@ function onDanceMediaChange(input){
 }
 
 // ==================== 语言打卡系统 ====================
-const LANG_VOCAB = {
-  korean: [
-    {word:'안녕하세요',mean:'你好',pron:'an-nyeong-ha-se-yo',example:'안녕하세요, 만나서 반가워요.',exampleCn:'你好，很高兴认识你。'},
-    {word:'감사합니다',mean:'谢谢',pron:'gam-sa-ham-ni-da',example:'도와주셔서 감사합니다.',exampleCn:'感谢您的帮助。'},
-    {word:'미안합니다',mean:'对不起',pron:'mi-an-ham-ni-da',example:'미안합니다, 늦었어요.',exampleCn:'对不起，我迟到了。'},
-    {word:'학교',mean:'学校',pron:'hak-gyo',example:'학교에 가요.',exampleCn:'去学校。'},
-    {word:'집',mean:'家',pron:'jip',example:'집에 왔어요.',exampleCn:'我到家了。'},
-    {word:'친구',mean:'朋友',pron:'chin-gu',example:'친구와 함께 있어요.',exampleCn:'和朋友在一起。'},
-    {word:'물',mean:'水',pron:'mul',example:'물을 마시고 싶어요.',exampleCn:'我想喝水。'},
-    {word:'커피',mean:'咖啡',pron:'keo-pi',example:'아침에 커피를 마셔요.',exampleCn:'早上喝咖啡。'},
-    {word:'밥',mean:'饭',pron:'bap',example:'밥을 먹었어요.',exampleCn:'我吃饭了。'},
-    {word:'시장',mean:'市场',pron:'si-jang',example:'시장에서 장을 봐요.',exampleCn:'在市场买菜。'},
-    {word:'지하철',mean:'地铁',pron:'ji-ha-cheol',example:'지하철을 타고 가요.',exampleCn:'坐地铁去。'},
-    {word:'병원',mean:'医院',pron:'byeong-won',example:'병원에 가야 해요.',exampleCn:'必须去医院。'},
-    {word:'도서관',mean:'图书馆',pron:'do-seo-gwan',example:'도서관에서 공부해요.',exampleCn:'在图书馆学习。'},
-    {word:'책',mean:'书',pron:'chaek',example:'책을 읽고 있어요.',exampleCn:'正在读书。'},
-    {word:'핸드폰',mean:'手机',pron:'haen-deu-pon',example:'핸드폰을 잃어버렸어요.',exampleCn:'手机丢了。'},
-    {word:'날씨',mean:'天气',pron:'nal-ssi',example:'오늘 날씨가 좋아요.',exampleCn:'今天天气很好。'},
-    {word:'시간',mean:'时间',pron:'si-gan',example:'시간이 없어요.',exampleCn:'没时间了。'},
-    {word:'돈',mean:'钱',pron:'don',example:'돈이 모자라요.',exampleCn:'钱不够。'},
-    {word:'쇼핑',mean:'购物',pron:'syop-ping',example:'쇼핑하러 가요.',exampleCn:'去购物。'},
-    {word:'여행',mean:'旅行',pron:'yeo-haeng',example:'여행을 가고 싶어요.',exampleCn:'想去旅行。'},
-    {word:'사랑',mean:'爱',pron:'sa-rang',example:'사랑해요.',exampleCn:'我爱你。'},
-    {word:'행복',mean:'幸福',pron:'haeng-bok',example:'행복해요.',exampleCn:'我很幸福。'},
-    {word:'음악',mean:'音乐',pron:'eum-ak',example:'음악을 들어요.',exampleCn:'听音乐。'},
-    {word:'영화',mean:'电影',pron:'yeong-hwa',example:'영화를 봐요.',exampleCn:'看电影。'},
-    {word:'공원',mean:'公园',pron:'gong-won',example:'공원에서 산책해요.',exampleCn:'在公园散步。'},
-    {word:'컴퓨터',mean:'电脑',pron:'keom-pyu-teo',example:'컴퓨터를 켜요.',exampleCn:'开电脑。'},
-    {word:'인터넷',mean:'网络',pron:'in-teo-net',example:'인터넷을 검색해요.',exampleCn:'搜索网络。'},
-    {word:'전화',mean:'电话',pron:'jeon-hwa',example:'전화를 걸어요.',exampleCn:'打电话。'},
-    {word:'문자',mean:'短信',pron:'mun-ja',example:'문자를 보내요.',exampleCn:'发短信。'},
-    {word:'약속',mean:'约定',pron:'yak-sok',example:'약속이 있어요.',exampleCn:'有约会。'},
-    {word:'웃다',mean:'笑',pron:'ut-da',example:'웃고 있어요.',exampleCn:'在笑。'},
-    {word:'울다',mean:'哭',pron:'ul-da',example:'아이가 울어요.',exampleCn:'孩子在哭。'},
-    {word:'먹다',mean:'吃',pron:'meok-da',example:'밥을 먹어요.',exampleCn:'吃饭。'},
-    {word:'마시다',mean:'喝',pron:'ma-si-da',example:'물을 마셔요.',exampleCn:'喝水。'},
-    {word:'자다',mean:'睡觉',pron:'ja-da',example:'일찍 자요.',exampleCn:'早点睡。'},
-    {word:'일어나다',mean:'起床',pron:'il-eo-na-da',example:'아침에 일어나요.',exampleCn:'早上起床。'},
-    {word:'공부하다',mean:'学习',pron:'gong-bu-ha-da',example:'한국어를 공부해요.',exampleCn:'学习韩语。'},
-    {word:'운동하다',mean:'运动',pron:'un-dong-ha-da',example:'매일 운동해요.',exampleCn:'每天运动。'},
-    {word:'춤추다',mean:'跳舞',pron:'chum-chu-da',example:'춤을 춰요.',exampleCn:'跳舞。'},
-    {word:'노래하다',mean:'唱歌',pron:'no-rae-ha-da',example:'노래를 불러요.',exampleCn:'唱歌。'},
-    {word:'요리하다',mean:'做饭',pron:'yo-ri-ha-da',example:'요리를 해요.',exampleCn:'做饭。'},
-    {word:'청소하다',mean:'打扫',pron:'cheong-so-ha-da',example:'방을 청소해요.',exampleCn:'打扫房间。'},
-    {word:'쉬다',mean:'休息',pron:'swi-da',example:'좀 쉴래요.',exampleCn:'想休息一下。'},
-    {word:'기다리다',mean:'等待',pron:'gi-da-ri-da',example:'기다리고 있어요.',exampleCn:'在等待。'},
-    {word:'약',mean:'药',pron:'yak',example:'약을 먹어요.',exampleCn:'吃药。'},
-    {word:'꽃',mean:'花',pron:'kkot',example:'꽃이 예뻐요.',exampleCn:'花很漂亮。'},
-    {word:'나무',mean:'树',pron:'na-mu',example:'나무가 많아요.',exampleCn:'树很多。'},
-    {word:'강아지',mean:'小狗',pron:'gang-a-ji',example:'강아지를 키워요.',exampleCn:'养小狗。'},
-    {word:'고양이',mean:'猫',pron:'go-yang-i',example:'고양이가 귀여워요.',exampleCn:'猫很可爱。'},
-    {word:'하늘',mean:'天空',pron:'ha-neul',example:'하늘이 파란색이에요.',exampleCn:'天空是蓝色的。'}
-  ],
-  english: [
-    {word:'deadline',mean:'截止日期',pron:'/ˈdedlaɪn/',example:'The deadline is next Friday.',exampleCn:'截止日期是下周五。'},
-    {word:'schedule',mean:'日程安排',pron:'/ˈʃedjuːl/',example:'Let me check my schedule.',exampleCn:'让我看一下我的日程。'},
-    {word:'agenda',mean:'议程',pron:'/əˈdʒendə/',example:'What is on the agenda today?',exampleCn:'今天的议程是什么？'},
-    {word:'budget',mean:'预算',pron:'/ˈbʌdʒɪt/',example:'We need to stay within budget.',exampleCn:'我们需要控制在预算内。'},
-    {word:'revenue',mean:'收入',pron:'/ˈrevənjuː/',example:'Revenue increased by 20%.',exampleCn:'收入增长了20%。'},
-    {word:'proposal',mean:'提案',pron:'/prəˈpəʊzl/',example:'I will submit the proposal tomorrow.',exampleCn:'我明天提交提案。'},
-    {word:'negotiate',mean:'谈判',pron:'/nɪˈɡəʊʃieɪt/',example:'We need to negotiate the terms.',exampleCn:'我们需要谈判条款。'},
-    {word:'quarterly',mean:'季度的',pron:'/ˈkwɔːtəli/',example:'The quarterly report is due.',exampleCn:'季度报告到期了。'},
-    {word:'stakeholder',mean:'利益相关者',pron:'/ˈsteɪkhəʊldə/',example:'All stakeholders were informed.',exampleCn:'所有利益相关者都已通知。'},
-    {word:'feedback',mean:'反馈',pron:'/ˈfiːdbæk/',example:'Please send me your feedback.',exampleCn:'请把你的反馈发给我。'},
-    {word:'conference',mean:'会议',pron:'/ˈkɒnfərəns/',example:'The conference starts at 9 AM.',exampleCn:'会议上午9点开始。'},
-    {word:'invoice',mean:'发票',pron:'/ˈɪnvɔɪs/',example:'Please pay the invoice by Friday.',exampleCn:'请在周五前支付发票。'},
-    {word:'contract',mean:'合同',pron:'/ˈkɒntrækt/',example:'We signed the contract yesterday.',exampleCn:'我们昨天签了合同。'},
-    {word:'strategy',mean:'策略',pron:'/ˈstrætədʒi/',example:'Our strategy is working well.',exampleCn:'我们的策略效果很好。'},
-    {word:'objective',mean:'目标',pron:'/əbˈdʒektɪv/',example:'The main objective is growth.',exampleCn:'主要目标是增长。'},
-    {word:'priority',mean:'优先事项',pron:'/praɪˈɒrəti/',example:'This is our top priority.',exampleCn:'这是我们的首要任务。'},
-    {word:'milestone',mean:'里程碑',pron:'/ˈmaɪlstəʊn/',example:'We reached a major milestone.',exampleCn:'我们达到了一个重要里程碑。'},
-    {word:'delegate',mean:'委派',pron:'/ˈdelɪɡeɪt/',example:'I will delegate this task to him.',exampleCn:'我会把这项任务委派给他。'},
-    {word:'compliance',mean:'合规',pron:'/kəmˈplaɪəns/',example:'We must ensure compliance.',exampleCn:'我们必须确保合规。'},
-    {word:'efficiency',mean:'效率',pron:'/ɪˈfɪʃənsi/',example:'Efficiency has improved greatly.',exampleCn:'效率大幅提升。'},
-    {word:'colleague',mean:'同事',pron:'/ˈkɒliːɡ/',example:'My colleague helped me.',exampleCn:'我的同事帮助了我。'},
-    {word:'presentation',mean:'演示',pron:'/ˌpreznˈteɪʃn/',example:'The presentation went well.',exampleCn:'演示进行得很顺利。'},
-    {word:'workflow',mean:'工作流程',pron:'/ˈwɜːkfləʊ/',example:'We improved our workflow.',exampleCn:'我们改进了工作流程。'},
-    {word:'innovate',mean:'创新',pron:'/ˈɪnəveɪt/',example:'We must innovate to survive.',exampleCn:'我们必须创新才能生存。'},
-    {word:'analyze',mean:'分析',pron:'/ˈænəlaɪz/',example:'Let me analyze the data.',exampleCn:'让我分析这份数据。'},
-    {word:'launch',mean:'发布',pron:'/lɔːntʃ/',example:'We will launch next month.',exampleCn:'我们下个月发布。'},
-    {word:'campaign',mean:'活动',pron:'/kæmˈpeɪn/',example:'The campaign was successful.',exampleCn:'活动很成功。'},
-    {word:'revenue',mean:'收入',pron:'/ˈrevənjuː/',example:'Revenue exceeded expectations.',exampleCn:'收入超出预期。'},
-    {word:'expense',mean:'支出',pron:'/ɪkˈspens/',example:'We need to cut expenses.',exampleCn:'我们需要削减支出。'},
-    {word:'profit',mean:'利润',pron:'/ˈprɒfɪt/',example:'Profit doubled this year.',exampleCn:'今年利润翻倍。'},
-    {word:'market',mean:'市场',pron:'/ˈmɑːkɪt/',example:'The market is growing.',exampleCn:'市场在增长。'},
-    {word:'customer',mean:'客户',pron:'/ˈkʌstəmə/',example:'Customer satisfaction is key.',exampleCn:'客户满意度是关键。'},
-    {word:'solution',mean:'解决方案',pron:'/səˈluːʃn/',example:'We found a solution.',exampleCn:'我们找到了解决方案。'},
-    {word:'challenge',mean:'挑战',pron:'/ˈtʃælɪndʒ/',example:'This is a big challenge.',exampleCn:'这是一个巨大的挑战。'},
-    {word:'opportunity',mean:'机会',pron:'/ˌɒpəˈtjuːnəti/',example:'Don\'t miss this opportunity.',exampleCn:'不要错过这个机会。'},
-    {word:'resource',mean:'资源',pron:'/rɪˈsɔːs/',example:'We need more resources.',exampleCn:'我们需要更多资源。'},
-    {word:'teamwork',mean:'团队合作',pron:'/ˈtiːmwɜːk/',example:'Teamwork is essential.',exampleCn:'团队合作很重要。'},
-    {word:'deadline',mean:'截止日期',pron:'/ˈdedlaɪn/',example:'Meet the deadline.',exampleCn:'赶上截止日期。'},
-    {word:'review',mean:'回顾',pron:'/rɪˈvjuː/',example:'Let\'s review the plan.',exampleCn:'让我们回顾计划。'},
-    {word:'update',mean:'更新',pron:'/ˌʌpˈdeɪt/',example:'I will update you soon.',exampleCn:'我很快会更新你。'},
-    {word:'approach',mean:'方法',pron:'/əˈprəʊtʃ/',example:'A new approach is needed.',exampleCn:'需要新方法。'},
-    {word:'perspective',mean:'视角',pron:'/pəˈspektɪv/',example:'From a different perspective.',exampleCn:'从不同视角看。'},
-    {word:'implement',mean:'实施',pron:'/ˈɪmplɪment/',example:'We will implement the plan.',exampleCn:'我们将实施计划。'},
-    {word:'optimize',mean:'优化',pron:'/ˈɒptɪmaɪz/',example:'We need to optimize costs.',exampleCn:'我们需要优化成本。'},
-    {word:'transition',mean:'过渡',pron:'/trænˈzɪʃn/',example:'The transition was smooth.',exampleCn:'过渡很顺利。'},
-    {word:' scalable',mean:'可扩展的',pron:'/ˈskeɪləbl/',example:'The system is scalable.',exampleCn:'系统是可扩展的。'},
-    {word:'agile',mean:'敏捷的',pron:'/ˈædʒaɪl/',example:'We use agile methodology.',exampleCn:'我们使用敏捷方法。'},
-    {word:'brainstorm',mean:'头脑风暴',pron:'/ˈbreɪnstɔːm/',example:'Let\'s brainstorm ideas.',exampleCn:'让我们头脑风暴。'},
-    {word:'synergy',mean:'协同',pron:'/ˈsɪnədʒi/',example:'There is great synergy.',exampleCn:'协同效应很好。'}
-  ],
-  spanish: {
-    A2: [
-      {word:'hola',mean:'你好',pron:'/ˈola/',example:'¡Hola! ¿Cómo estás?',exampleCn:'你好！你好吗？'},
-      {word:'gracias',mean:'谢谢',pron:'/ˈɡɾaθjas/',example:'Muchas gracias por tu ayuda.',exampleCn:'非常感谢你的帮助。'},
-      {word:'perdón',mean:'对不起',pron:'/peɾˈðon/',example:'Perdón, no entiendo.',exampleCn:'对不起，我不明白。'},
-      {word:'agua',mean:'水',pron:'/ˈaɣwa/',example:'Quiero un vaso de agua.',exampleCn:'我想要一杯水。'},
-      {word:'comida',mean:'食物',pron:'/koˈmiða/',example:'La comida está deliciosa.',exampleCn:'食物很美味。'},
-      {word:'tienda',mean:'商店',pron:'/ˈtjenda/',example:'Voy a la tienda.',exampleCn:'我去商店。'},
-      {word:'tiempo',mean:'时间/天气',pron:'/ˈtjempo/',example:'¿Qué tiempo hace hoy?',exampleCn:'今天天气怎么样？'},
-      {word:'dinero',mean:'钱',pron:'/diˈneɾo/',example:'No tengo dinero.',exampleCn:'我没有钱。'},
-      {word:'trabajo',mean:'工作',pron:'/tɾaˈβaxo/',example:'Tengo mucho trabajo.',exampleCn:'我有很多工作。'},
-      {word:'familia',mean:'家庭',pron:'/faˈmilja/',example:'Mi familia es grande.',exampleCn:'我的家庭很大。'},
-      {word:'amigo',mean:'朋友',pron:'/aˈmiɣo/',example:'Mi amigo es simpático.',exampleCn:'我的朋友很友善。'},
-      {word:'casa',mean:'家',pron:'/ˈkasa/',example:'Estoy en casa.',exampleCn:'我在家。'},
-      {word:'escuela',mean:'学校',pron:'/esˈkwela/',example:'Voy a la escuela.',exampleCn:'我去学校。'},
-      {word:'libro',mean:'书',pron:'/ˈliβɾo/',example:'Leo un libro.',exampleCn:'我在读书。'},
-      {word:'perro',mean:'狗',pron:'/ˈpeɾo/',example:'Tengo un perro.',exampleCn:'我有一只狗。'},
-      {word:'gato',mean:'猫',pron:'/ˈɡato/',example:'El gato duerme.',exampleCn:'猫在睡觉。'},
-      {word:'coche',mean:'汽车',pron:'/ˈkotʃe/',example:'Mi coche es rojo.',exampleCn:'我的车是红色的。'},
-      {word:'ciudad',mean:'城市',pron:'/θjuˈðað/',example:'Vivo en la ciudad.',exampleCn:'我住在城市。'},
-      {word:'país',mean:'国家',pron:'/paˈis/',example:'Es un país hermoso.',exampleCn:'这是一个美丽的国家。'},
-      {word:'feliz',mean:'快乐',pron:'/feˈlis/',example:'Soy muy feliz.',exampleCn:'我很快乐。'}
-    ],
-    B1: [
-      {word:'propuesta',mean:'提案',pron:'/pɾoˈpwesta/',example:'Presenté una propuesta.',exampleCn:'我提交了一个提案。'},
-      {word:'reunión',mean:'会议',pron:'/reuˈnjon/',example:'La reunión empieza a las nueve.',exampleCn:'会议九点开始。'},
-      {word:'negociar',mean:'谈判',pron:'/neɣoˈθjaɾ/',example:'Tenemos que negociar.',exampleCn:'我们需要谈判。'},
-      {word:'presupuesto',mean:'预算',pron:'/pɾesuˈpwesto/',example:'El presupuesto es limitado.',exampleCn:'预算是有限的。'},
-      {word:'ingresos',mean:'收入',pron:'/inˈɡɾesos/',example:'Los ingresos aumentaron.',exampleCn:'收入增加了。'},
-      {word:'plazo',mean:'期限',pron:'/ˈplaθo/',example:'El plazo es el viernes.',exampleCn:'期限是周五。'},
-      {word:'informe',mean:'报告',pron:'/infoɾˈme/',example:'El informe está listo.',exampleCn:'报告准备好了。'},
-      {word:'estrategia',mean:'策略',pron:'/estɾaˈtexja/',example:'Necesitamos una estrategia.',exampleCn:'我们需要一个策略。'},
-      {word:'contrato',mean:'合同',pron:'/konˈtɾato/',example:'Firmamos el contrato.',exampleCn:'我们签了合同。'},
-      {word:'cliente',mean:'客户',pron:'/kliˈente/',example:'El cliente está satisfecho.',exampleCn:'客户很满意。'},
-      {word:'equipo',mean:'团队',pron:'/eˈkipo/',example:'Mi equipo es excelente.',exampleCn:'我的团队很棒。'},
-      {word:'proyecto',mean:'项目',pron:'/pɾoˈxekto/',example:'El proyecto va bien.',exampleCn:'项目进展顺利。'},
-      {word:'objetivo',mean:'目标',pron:'/oβxeˈtiβo/',example:'Nuestro objetivo es crecer.',exampleCn:'我们的目标是增长。'},
-      {word:'decisión',mean:'决定',pron:'/deθiˈsjon/',example:'Tomé una decisión.',exampleCn:'我做了一个决定。'},
-      {word:'experiencia',mean:'经验',pron:'/espeˈɾjenθja/',example:'Tengo mucha experiencia.',exampleCn:'我有很多经验。'},
-      {word:'conocimiento',mean:'知识',pron:'/konoθiˈmjento/',example:'El conocimiento es poder.',exampleCn:'知识就是力量。'},
-      {word:'desarrollo',mean:'发展',pron:'/desaˈɾoʎo/',example:'El desarrollo es rápido.',exampleCn:'发展很快。'},
-      {word:'mercado',mean:'市场',pron:'/meɾˈkaðo/',example:'El mercado es competitivo.',exampleCn:'市场很有竞争力。'},
-      {word:'inversión',mean:'投资',pron:'/imbeɾˈsjon/',example:'La inversión fue buena.',exampleCn:'投资回报不错。'},
-      {word:'crecimiento',mean:'增长',pron:'/kɾeθiˈmjento/',example:'El crecimiento es steady.',exampleCn:'增长是稳定的。'}
-    ],
-    B2: [
-      {word:'rentabilidad',mean:'盈利能力',pron:'/ɾentabiˈliðað/',example:'La rentabilidad mejoró.',exampleCn:'盈利能力改善了。'},
-      {word:'viabilidad',mean:'可行性',pron:'/bjabiˈliðað/',example:'Estudiamos la viabilidad.',exampleCn:'我们研究可行性。'},
-      {word:'repercusiones',mean:'影响',pron:'/repeɾkuˈsjoɲes/',example:'Las repercusiones son graves.',exampleCn:'影响很严重。'},
-      {word:'subcontratar',mean:'外包',pron:'/suβkontɾaˈtaɾ/',example:'Decidimos subcontratar.',exampleCn:'我们决定外包。'},
-      {word:'consolidar',mean:'巩固',pron:'/konsoliˈðaɾ/',example:'Hay que consolidar la posición.',exampleCn:'需要巩固地位。'},
-      {word:'sinergia',mean:'协同效应',pron:'/siˈneɾxja/',example:'Buscamos sinergia entre equipos.',exampleCn:'我们寻找团队间的协同效应。'},
-      {word:'diversificar',mean:'多元化',pron:'/diβeɾsiˈfi kaɾ/',example:'Queremos diversificar productos.',exampleCn:'我们想多元化产品。'},
-      {word:'escalabilidad',mean:'可扩展性',pron:'/eskalaβiˈliðað/',example:'La escalabilidad es clave.',exampleCn:'可扩展性是关键。'},
-      {word:'mitigar',mean:'缓解',pron:'/miˈtiɣaɾ/',example:'Debemos mitigar riesgos.',exampleCn:'我们必须缓解风险。'},
-      {word:'disrupción',mean:'颠覆',pron:'/disɾupˈθjon/',example:'La disrupción digital cambió todo.',exampleCn:'数字颠覆改变了一切。'},
-      {word:'sostenible',mean:'可持续的',pron:'/sosteˈniβle/',example:'El modelo es sostenible.',exampleCn:'模式是可持续的。'},
-      {word:'paradigma',mean:'范式',pron:'/paˈɾaðiɣma/',example:'Un nuevo paradigma surge.',exampleCn:'新范式出现了。'},
-      {word:'optimización',mean:'优化',pron:'/optimiθaˈsjon/',example:'La optimización es continua.',exampleCn:'优化是持续的。'},
-      {word:'transformación',mean:'转型',pron:'/tɾansfoɾmaˈsjon/',example:'La transformación digital avanza.',exampleCn:'数字化转型在推进。'},
-      {word:'innovación',mean:'创新',pron:'/innoβaˈsjon/',example:'La innovación es necesaria.',exampleCn:'创新是必要的。'},
-      {word:'colaboración',mean:'协作',pron:'/kolaβoɾaˈsjon/',example:'La colaboración es fluida.',exampleCn:'协作很流畅。'},
-      {word:'evaluación',mean:'评估',pron:'/eβaluaˈsjon/',example:'La evaluación fue positiva.',exampleCn:'评估是正面的。'},
-      {word:'implementación',mean:'实施',pron:'/implementaˈsjon/',example:'La implementación fue rápida.',exampleCn:'实施很快。'},
-      {word:'rendimiento',mean:'绩效',pron:'/rendiˈmjento/',example:'El rendimiento mejoró.',exampleCn:'绩效提升了。'},
-      {word:'proactividad',mean:'主动性',pron:'/pɾoaktiβiˈðað/',example:'Su proactividad destaca.',exampleCn:'她的主动性很突出。'}
-    ]
-  }
-};
+// 词库从外部 vocab.js 加载，支持 localStorage 缓存离线使用
+let LANG_VOCAB = { korean: [], english: [], spanish: { A2: [], B1: [], B2: [] } };
 
+async function loadVocab(){
+  // Try localStorage cache first
+  const cached = LS.get('vocab_cache', null);
+  if(cached && cached.korean && cached.korean.length > 50){
+    LANG_VOCAB = cached;
+    return;
+  }
+  // Fetch from vocab.js
+  try {
+    const resp = await fetch('vocab.js?_t=' + Date.now());
+    const text = await resp.text();
+    eval(text);
+    if(typeof VOCAB_DATA !== 'undefined'){
+      LANG_VOCAB = VOCAB_DATA;
+      LS.set('vocab_cache', VOCAB_DATA);
+    }
+  } catch(e) {
+    console.error('Failed to load vocab:', e);
+    // Fallback: try cached even if old
+    if(cached) LANG_VOCAB = cached;
+  }
+}
 let langState = { lang:'korean', level:'A2', count:10, drillWords:[], index:0, answers:[], mistakes:[], startTime:0, answered:false };
 
 function getVocab(lang, level) {
   let vocab;
-  if(lang==='spanish') vocab = LANG_VOCAB.spanish[level] || LANG_VOCAB.spanish.A2;
-  else vocab = LANG_VOCAB[lang] || [];
-  // Shuffle a copy so the order is different each time
+  if(lang==='spanish') vocab = (LANG_VOCAB.spanish && (LANG_VOCAB.spanish[level] || LANG_VOCAB.spanish.A2)) || [];
+  else vocab = (LANG_VOCAB[lang]) || [];
   return shuffle(vocab.slice());
 }
 
@@ -1751,13 +1601,7 @@ function renderLangDetail(lang) {
   }
 
   html += `<div class="card"><div class="section-title">📅 打卡日历</div>`+renderCalendar(records)+`</div>`;
-  html += `<div class="card"><div class="section-title">📖 词库浏览</div><div class="wordbook-grid">${vocab.map(w=>`
-    <div class="wordbook-item">
-      <div class="wordbook-word">${w.word}</div>
-      <div class="wordbook-pron">${w.pron||''}</div>
-      <div class="wordbook-mean">${w.mean}</div>
-    </div>
-  `).join('')}</div></div>`;
+
 
   panel.innerHTML = html;
 }
@@ -3052,6 +2896,7 @@ if(!LS.get('diary_entries',null)){
     {id:'diary_seed_5',moodKey:'😴',text:'今天太累了，但是充实的一天。早点休息吧。',date:ds(1),tags:[],template:'free'}
   ]);
 }
+loadVocab();
 renderNav();
 renderHomeModuleList();
 renderDiary();
