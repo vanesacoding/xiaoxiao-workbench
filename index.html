@@ -296,6 +296,36 @@
     .mistake-item { display:flex; justify-content:space-between; padding:8px; background:var(--tag-bg); border-radius:var(--radius-card); margin-bottom:6px; font-size:13px; color:var(--body); }
     .back-btn { font-size:28px; color:var(--brand); cursor:pointer; padding:0 8px; font-weight:300; line-height:1; }
 
+    /* Level path */
+    .level-path-container { display:flex; flex-direction:column; align-items:center; padding:16px 0; }
+    .level-row { display:flex; justify-content:center; width:100%; position:relative; }
+    .level-row.offset-left { justify-content:flex-start; padding-left:22%; }
+    .level-row.offset-right { justify-content:flex-end; padding-right:22%; }
+    .level-node { width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; cursor:pointer; border:3px solid var(--border); background:var(--card); transition:all 0.3s; position:relative; z-index:2; color:var(--body); flex-shrink:0; }
+    .level-node.completed { background:var(--brand); border-color:var(--brand); color:#fff; }
+    .level-node.current { border-color:var(--brand); box-shadow:0 0 0 4px var(--brand-light); animation:lvl-bounce 1.2s infinite; }
+    .level-node.locked { background:var(--tag-bg); color:var(--hint); cursor:not-allowed; }
+    .level-node:active:not(.locked) { transform:scale(0.92); }
+    .level-connector { width:3px; height:20px; background:var(--border); border-radius:2px; }
+    .level-connector.completed { background:var(--brand); }
+    @keyframes lvl-bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
+    .drill-hearts { display:flex; gap:3px; align-items:center; }
+    .drill-heart { font-size:16px; transition:all 0.3s; }
+    .drill-heart.lost { opacity:0.2; }
+    @keyframes shake-anim { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px);} 40%{transform:translateX(8px);} 60%{transform:translateX(-5px);} 80%{transform:translateX(5px);} }
+    @keyframes correct-pulse { 0%{transform:scale(1);} 50%{transform:scale(1.06);} 100%{transform:scale(1);} }
+    .animate-shake { animation:shake-anim 0.4s; }
+    .animate-pulse { animation:correct-pulse 0.3s; }
+    .lang-streak-banner { display:flex; justify-content:space-around; padding:14px 0; margin-bottom:8px; }
+    .lang-streak-item { text-align:center; }
+    .lang-streak-num { font-size:22px; font-weight:700; color:var(--brand); }
+    .lang-streak-label { font-size:11px; color:var(--muted); margin-top:2px; }
+    .drill-progress-bar { width:100%; height:6px; background:var(--tag-bg); border-radius:3px; margin-bottom:12px; overflow:hidden; }
+    .drill-progress-fill { height:100%; background:var(--brand); border-radius:3px; transition:width 0.3s; }
+    .game-over-icon { font-size:48px; text-align:center; margin:16px 0; }
+    .game-over-title { font-size:20px; font-weight:700; text-align:center; color:var(--title); margin-bottom:8px; }
+    .game-over-msg { font-size:14px; text-align:center; color:var(--muted); margin-bottom:16px; }
+
     /* 语言首页卡片 */
     .lang-home-card { display:flex; align-items:center; gap:14px; background:var(--card); border-radius:var(--radius-card); padding:16px; margin-bottom:12px; cursor:pointer; transition:all 0.2s; border:1px solid var(--border); }
     .lang-home-card:active { border-color:var(--brand); transform:scale(0.98); }
@@ -1353,7 +1383,7 @@ function renderLangHome() {
     const total = vocab.length;
     const learned = LS.get('lang_learned_'+l.id, []).length;
     const records = LS.get('lang_records_'+l.id, []);
-    const streak = calcStreak(records);
+    const streak = calcLangStreak(records);
     html += `<div class="lang-home-card" onclick="goToLangDetail('${l.id}')">
       <div class="lang-home-flag">${l.flag}</div>
       <div class="lang-home-info">
@@ -1368,21 +1398,51 @@ function renderLangHome() {
   content.innerHTML = html;
 }
 
+function getLessons(lang, level) {
+  const vocab = getVocab(lang, level);
+  const lessons = [];
+  for (let i = 0; i < vocab.length; i += 5) { lessons.push(vocab.slice(i, i + 5)); }
+  return lessons;
+}
+
+function calcLangStreak(records) {
+  if (!records.length) return 0;
+  const dates = [...new Set(records.map(r=>r.date))].sort();
+  const today = todayStr();
+  const y = new Date(Date.now() - 86400000);
+  const yStr = `${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`;
+  if (!dates.includes(today) && !dates.includes(yStr)) return 0;
+  let streak = 1;
+  for (let i = dates.length - 1; i > 0; i--) {
+    const cur = new Date(dates[i]); const prev = new Date(dates[i-1]);
+    const diff = Math.round((cur - prev) / 86400000);
+    if (diff === 1) streak++; else break;
+  }
+  return streak;
+}
+
 function renderLangDetail(lang) {
   const panel = document.getElementById(lang+'-detail-panel');
   if(!panel) return;
-  const vocab = getVocab(lang, lang==='spanish'?(LS.get('lang_level_spanish','A2')):null);
-  const total = vocab.length;
-  const learned = LS.get('lang_learned_'+lang, []).length;
-  const mistakes = LS.get('lang_mistakes_'+lang, []);
+  const level = lang==='spanish'?LS.get('lang_level_spanish','A2'):null;
+  const vocab = getVocab(lang, level);
+  const lessons = getLessons(lang, level);
+  const completed = LS.get('lang_lessons_completed_'+lang, []);
   const records = LS.get('lang_records_'+lang, []);
-  const streak = calcStreak(records);
+  const streak = calcLangStreak(records);
+  const xp = LS.get('lang_xp_'+lang, 0);
+  const learned = LS.get('lang_learned_'+lang, []).length;
+  const currentLesson = lessons.findIndex((_, i) => !completed.includes(i));
 
   let html = `<div class="lang-overview">
     <div class="lang-flag-big">${lang==='korean'?'🇰🇷':lang==='english'?'🇬🇧':'🇪🇸'}</div>
     <div style="font-weight:700;color:var(--title);margin-top:6px;">${lang==='korean'?'韩语日常高频':lang==='english'?'英语商务场景':'西语DELE分级'}</div>
-    <div style="font-size:12px;color:var(--muted);margin:4px 0;">已学 ${learned} / ${total} 词 · 连续打卡 ${streak} 天</div>
-    <div class="lang-progress-bar"><div class="lang-progress-fill" style="width:${total?learned/total*100:0}%"></div></div>
+  </div>`;
+
+  html += `<div class="lang-streak-banner">
+    <div class="lang-streak-item"><div class="lang-streak-num">${streak}</div><div class="lang-streak-label">🔥 连胜天数</div></div>
+    <div class="lang-streak-item"><div class="lang-streak-num">${xp}</div><div class="lang-streak-label">⭐ 经验值</div></div>
+    <div class="lang-streak-item"><div class="lang-streak-num">${learned}/${vocab.length}</div><div class="lang-streak-label">📖 已学单词</div></div>
   </div>`;
 
   if(lang==='spanish'){
@@ -1394,13 +1454,21 @@ function renderLangDetail(lang) {
     </div>`;
   }
 
-  const curCount = LS.get('lang_count_'+lang, 10);
-  html += `<div class="lang-settings">
-    <span style="font-size:13px;color:var(--muted);align-self:center;">每次打卡：</span>
-    ${[5,10,15,20].map(c=>`<button class="lang-setting-btn ${curCount===c?'active':''}" onclick="setLangCount('${lang}',${c})">${c}词</button>`).join('')}
-  </div>
-  <button class="btn" onclick="startDrill('${lang}')" style="width:100%;margin-bottom:12px;">▶ 开始词汇打卡</button>`;
+  html += `<div class="level-path-container">`;
+  lessons.forEach((lesson, i) => {
+    const isCompleted = completed.includes(i);
+    const isCurrent = i === currentLesson;
+    const isLocked = i > currentLesson;
+    const offsetClass = i % 2 === 0 ? 'offset-right' : 'offset-left';
+    const nodeClass = isCompleted ? 'completed' : isCurrent ? 'current' : 'locked';
+    const icon = isCompleted ? '✓' : isLocked ? '🔒' : (i + 1);
+    const connectorClass = isCompleted ? 'completed' : '';
+    html += `<div class="level-row ${offsetClass}"><div class="level-node ${nodeClass}" ${isLocked ? '' : `onclick="startLesson('${lang}',${i})"`}>${icon}</div></div>`;
+    if (i < lessons.length - 1) { html += `<div class="level-connector ${connectorClass}"></div>`; }
+  });
+  html += `</div>`;
 
+  const mistakes = LS.get('lang_mistakes_'+lang, []);
   if(mistakes.length){
     html += `<div class="card"><div class="section-title">❌ 错词本 (${mistakes.length})</div><div class="wordbook-grid">${mistakes.slice(-10).reverse().map(w=>`
       <div class="wordbook-item">
@@ -1412,7 +1480,6 @@ function renderLangDetail(lang) {
   }
 
   html += `<div class="card"><div class="section-title">📅 打卡日历</div>`+renderCalendar(records)+`</div>`;
-
   html += `<div class="card"><div class="section-title">📖 词库浏览</div><div class="wordbook-grid">${vocab.map(w=>`
     <div class="wordbook-item">
       <div class="wordbook-word">${w.word}</div>
@@ -1440,36 +1507,37 @@ function backToLangHome() {
 function setSpanishLevel(lvl){ LS.set('lang_level_spanish',lvl); renderLangDetail('spanish'); }
 function setLangCount(lang,c){ LS.set('lang_count_'+lang,c); renderLangDetail(lang); }
 
-function startDrill(lang){
+function startLesson(lang, lessonIdx){
   const level = lang==='spanish'?LS.get('lang_level_spanish','A2'):null;
-  const vocab = getVocab(lang, level);
-  const count = Math.min(LS.get('lang_count_'+lang,10), vocab.length);
-  // 优先抽取未练过的单词，让每次题目更随机
-  const practicedKey = 'lang_practiced_'+lang+(level?'_'+level:'');
-  let practiced = LS.get(practicedKey, []);
-  const unpracticed = vocab.filter(w=>!practiced.includes(w.word));
-  let pool = unpracticed.length >= count ? unpracticed : vocab;
-  let selected = shuffle(pool).slice(0,count);
-  // 记录本次练习的单词
-  practiced = [...new Set([...practiced, ...selected.map(w=>w.word)])];
-  if(practiced.length > vocab.length * 2) practiced = practiced.slice(-vocab.length); // 控制记录长度
-  LS.set(practicedKey, practiced);
-  langState = { lang, level, count, drillWords:selected, index:0, answers:[], mistakes:[], startTime:Date.now(), answered:false };
+  const lessons = getLessons(lang, level);
+  const lesson = lessons[lessonIdx];
+  if(!lesson) return;
+  const selected = shuffle(lesson);
+  langState = { lang, level, lessonIdx, count:selected.length, drillWords:selected, index:0, answers:[], mistakes:[], startTime:Date.now(), answered:false, hearts:5, lastQType:null };
   renderDrill();
 }
 
 function renderDrill(){
-  const {lang,drillWords,index,answered} = langState;
+  const {lang,drillWords,index,answered,hearts} = langState;
   const panel = document.getElementById(lang+'-detail-panel');
   const w = drillWords[index];
   const total = drillWords.length;
-  const qType = pickQuestionType(w, lang);
+  const qType = pickQuestionType(w, lang, langState.lastQType);
+  langState.lastQType = qType.type;
+
+  let heartsHtml = '<div class="drill-hearts">';
+  for(let i=0;i<5;i++){ heartsHtml += `<span class="drill-heart ${i>=hearts?'lost':''}">${i<hearts?'❤️':'🤍'}</span>`; }
+  heartsHtml += '</div>';
+
+  const progressPct = (index / total) * 100;
 
   let html = `<div class="drill-card">
     <div class="drill-header">
       <span class="drill-counter">${index+1} / ${total}</span>
-      <span style="font-size:12px;color:var(--muted);">${qType.label}</span>
-    </div>`;
+      ${heartsHtml}
+    </div>
+    <div class="drill-progress-bar"><div class="drill-progress-fill" style="width:${progressPct}%"></div></div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px;">${qType.label}</div>`;
 
   if(qType.type==='listen'){
     html += `<div style="text-align:center;margin:16px 0;">
@@ -1521,10 +1589,12 @@ function renderDrill(){
   panel.innerHTML = html;
 }
 
-function pickQuestionType(w,lang){
+function pickQuestionType(w, lang, lastType) {
   let types = ['listen','cn2foreign','foreign2cn','translate'];
   if(lang==='korean') types.push('selectword');
   else types.push('fillword');
+  if (lastType) types = types.filter(t => t !== lastType);
+  if (!types.length) { types = ['listen','cn2foreign','foreign2cn','translate']; if(lang==='korean') types.push('selectword'); else types.push('fillword'); }
   const type = types[Math.floor(Math.random()*types.length)];
   const vocab = getVocab(lang, langState.level);
   const labelMap = {listen:'👂 听力',cn2foreign:'📝 中→外',foreign2cn:'📝 外→中',fillword:'✏️ 单词填空',selectword:'📝 单词选择',translate:'✏️ 翻译填空'};
@@ -1544,7 +1614,6 @@ function pickQuestionType(w,lang){
   }
   return {type,label:labelMap[type]};
 }
-
 function speakWord(word,lang){
   const voices = {'korean':'ko-KR','english':'en-US','spanish':'es-ES'};
   const u = new SpeechSynthesisUtterance(word);
@@ -1559,15 +1628,18 @@ function submitAnswer(idx,isCorrect){
   const correct = isCorrect==='true';
   const el = document.getElementById('opt-'+idx);
   const fb = document.getElementById('drill-feedback');
-  if(correct){ el.classList.add('correct'); fb.textContent='✅ 正确！'; fb.style.color='var(--success)'; }
-  else { el.classList.add('wrong'); fb.textContent='❌ 错误'; fb.style.color='var(--error)'; }
+  if(correct){
+    el.classList.add('correct','animate-pulse');
+    fb.textContent='✅ 正确！'; fb.style.color='var(--success)';
+  } else {
+    el.classList.add('wrong','animate-shake');
+    fb.textContent='❌ 错误'; fb.style.color='var(--error)';
+    langState.hearts = Math.max(0, langState.hearts - 1);
+  }
   langState.answers.push(correct);
   if(!correct) langState.mistakes.push(langState.drillWords[langState.index]);
-
-  document.querySelectorAll('.drill-opt').forEach((opt,i)=>{
-    if(opt.dataset&&opt.dataset.correct==='true') opt.classList.add('correct');
-  });
-
+  document.querySelectorAll('.drill-opt').forEach(opt=>{ if(opt.textContent===langState.drillWords[langState.index].mean||opt.textContent===langState.drillWords[langState.index].word) opt.classList.add('correct'); });
+  if(langState.hearts<=0){ setTimeout(()=>renderGameOver(),1200); return; }
   const card = document.querySelector('.drill-card');
   const btn = document.createElement('button');
   btn.className='btn drill-next-btn';
@@ -1575,7 +1647,6 @@ function submitAnswer(idx,isCorrect){
   btn.onclick = nextDrill;
   card.appendChild(btn);
 }
-
 function submitFill(){
   if(langState.answered) return;
   const input = document.getElementById('fill-input');
@@ -1586,16 +1657,16 @@ function submitFill(){
   const w = langState.drillWords[langState.index];
   const correct = val === w.word.toLowerCase();
   const fb = document.getElementById('drill-feedback');
-  if(correct){ fb.textContent='✅ 正确！'; fb.style.color='var(--success)'; input.style.borderColor='var(--success)'; }
-  else { fb.textContent='❌ 正确答案是：'+w.word; fb.style.color='var(--error)'; input.style.borderColor='var(--error)'; }
+  if(correct){ fb.textContent='✅ 正确！'; fb.style.color='var(--success)'; input.style.borderColor='var(--success)'; input.classList.add('animate-pulse'); }
+  else { fb.textContent='❌ 正确答案是：'+w.word; fb.style.color='var(--error)'; input.style.borderColor='var(--error)'; input.classList.add('animate-shake'); langState.hearts = Math.max(0, langState.hearts - 1); }
   langState.answers.push(correct);
   if(!correct) langState.mistakes.push(w);
+  if(langState.hearts<=0){ setTimeout(()=>renderGameOver(),1200); return; }
   const btn = document.createElement('button'); btn.className='btn drill-next-btn';
   btn.textContent = langState.index+1<langState.drillWords.length?'下一题 ➜':'查看结果 ✓';
   btn.onclick = nextDrill;
   input.parentElement.appendChild(btn);
 }
-
 function submitTrans(){
   if(langState.answered) return;
   const input = document.getElementById('trans-input');
@@ -1607,16 +1678,16 @@ function submitTrans(){
   const keywords = w.mean.split(/[,，、]/).map(s=>s.trim()).filter(Boolean);
   const correct = keywords.some(k=>val.includes(k));
   const fb = document.getElementById('drill-feedback');
-  if(correct){ fb.textContent='✅ 正确！'; fb.style.color='var(--success)'; input.style.borderColor='var(--success)'; }
-  else { fb.textContent='参考翻译：'+w.exampleCn; fb.style.color='var(--error)'; input.style.borderColor='var(--error)'; }
+  if(correct){ fb.textContent='✅ 正确！'; fb.style.color='var(--success)'; input.style.borderColor='var(--success)'; input.classList.add('animate-pulse'); }
+  else { fb.textContent='参考翻译：'+w.exampleCn; fb.style.color='var(--error)'; input.style.borderColor='var(--error)'; input.classList.add('animate-shake'); langState.hearts = Math.max(0, langState.hearts - 1); }
   langState.answers.push(correct);
   if(!correct) langState.mistakes.push(w);
+  if(langState.hearts<=0){ setTimeout(()=>renderGameOver(),1200); return; }
   const btn = document.createElement('button'); btn.className='btn drill-next-btn';
   btn.textContent = langState.index+1<langState.drillWords.length?'下一题 ➜':'查看结果 ✓';
   btn.onclick = nextDrill;
   input.parentElement.appendChild(btn);
 }
-
 function nextDrill(){
   langState.index++;
   langState.answered = false;
@@ -1628,7 +1699,7 @@ function nextDrill(){
 }
 
 function finishDrill(){
-  const {lang,answers,mistakes,startTime,drillWords} = langState;
+  const {lang,answers,mistakes,startTime,drillWords,lessonIdx,hearts} = langState;
   const correctCount = answers.filter(Boolean).length;
   const total = answers.length;
   const accuracy = total?Math.round(correctCount/total*100):0;
@@ -1653,11 +1724,29 @@ function finishDrill(){
   drillWords.forEach(w=>{ if(!learned.includes(w.word)) learned.push(w.word); });
   LS.set('lang_learned_'+lang,learned);
 
+  const xpGain = correctCount * 10 + (hearts === 5 ? 20 : 0);
+  const curXp = LS.get('lang_xp_'+lang, 0);
+  LS.set('lang_xp_'+lang, curXp + xpGain);
+
+  if(lessonIdx !== undefined && lessonIdx !== null){
+    const completed = LS.get('lang_lessons_completed_'+lang, []);
+    if(!completed.includes(lessonIdx)) completed.push(lessonIdx);
+    LS.set('lang_lessons_completed_'+lang, completed);
+  }
+
+  const streak = calcLangStreak(records);
   const stars = accuracy>=90?'⭐⭐⭐':accuracy>=70?'⭐⭐':accuracy>=50?'⭐':'💪';
   let html = `<div class="result-score">${accuracy}%</div>
     <div class="result-stars">${stars}</div>
-    <div style="text-align:center;color:var(--muted);font-size:14px;margin-bottom:16px;">
-      答对 ${correctCount}/${total} 题 · 用时 ${mins}分${secs}秒
+    <div style="text-align:center;color:var(--muted);font-size:14px;margin-bottom:12px;">
+      答对 ${correctCount}/${total} 题 · 用时 ${mins}分${secs}秒 · 剩余 ❤️${hearts}
+    </div>
+    <div style="text-align:center;margin-bottom:12px;">
+      <span class="lang-streak-num" style="font-size:18px;">+${xpGain}</span> XP
+      ${hearts===5?'<span style="margin-left:12px;color:var(--brand);font-size:14px;">✨ 完美通关 +20 XP</span>':''}
+    </div>
+    <div style="text-align:center;margin-bottom:16px;">
+      <span style="font-size:14px;color:var(--brand);">🔥 连续 ${streak} 天</span>
     </div>`;
 
   if(mistakes.length){
@@ -1668,8 +1757,27 @@ function finishDrill(){
     </div>`).join('');
   }
 
-  html += `<button class="btn" onclick="closeLangResult();renderLangDetail('${lang}');" style="width:100%;margin-top:16px;">知道了</button>`;
+  html += `<button class="btn" onclick="closeLangResult();renderLangDetail('${lang}');" style="width:100%;margin-top:16px;">继续学习</button>`;
 
+  document.getElementById('lang-result-content').innerHTML = html;
+  document.getElementById('lang-overlay').classList.add('active');
+}
+
+function renderGameOver(){
+  const {lang,lessonIdx} = langState;
+  const mistakes = langState.mistakes;
+  let html = `<div class="game-over-icon">💔</div>
+    <div class="game-over-title">生命值耗尽！</div>
+    <div class="game-over-msg">不要灰心，再来一次吧</div>`;
+  if(mistakes.length){
+    html += `<div class="section-title">❌ 错题回顾</div>`;
+    html += mistakes.slice(-5).map(m=>`<div class="mistake-item">
+      <span><b>${m.word}</b></span>
+      <span style="color:var(--muted);">${m.mean}</span>
+    </div>`).join('');
+  }
+  html += `<button class="btn" onclick="closeLangResult();startLesson('${lang}',${lessonIdx});" style="width:100%;margin-top:16px;">🔄 重新挑战</button>`;
+  html += `<button class="btn" onclick="closeLangResult();renderLangDetail('${lang}');" style="width:100%;margin-top:8px;background:var(--tag-bg);color:var(--muted);">返回关卡</button>`;
   document.getElementById('lang-result-content').innerHTML = html;
   document.getElementById('lang-overlay').classList.add('active');
 }

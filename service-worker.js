@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v20260804';
+const CACHE_VERSION = 'v20260804b';
 const CACHE_NAME = 'xiaoxiao-workbench-' + CACHE_VERSION;
 const urlsToCache = [
   './',
@@ -27,7 +27,6 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // 对导航请求（打开页面）：先从网络获取最新版本，失败再用缓存
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -40,7 +39,6 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
-  // 静态资源：缓存优先，网络兜底
   event.respondWith(
     caches.match(event.request).then(response => {
       if (response) return response;
