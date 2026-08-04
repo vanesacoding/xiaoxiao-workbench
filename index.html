@@ -1606,8 +1606,26 @@ function renderLangDetail(lang) {
     </div>`;
   }
 
+  // Level path: show collapsed by default, only current ± 2 visible
+  const showAllLevels = LS.get('lang_show_all_levels_'+lang, false);
+  const visibleStart = Math.max(0, currentLesson - 2);
+  const visibleEnd = Math.min(lessons.length, currentLesson + 3);
+  
   html += `<div class="level-path-container">`;
-  lessons.forEach((lesson, i) => {
+  if(currentLesson > 2 && !showAllLevels){
+    html += `<button class="lang-setting-btn active" onclick="LS.set('lang_show_all_levels_${lang}',true);renderLangDetail('${lang}');" style="margin-bottom:8px;">▼ 展开全部关卡</button>`;
+  }
+  
+  const startIdx = showAllLevels ? 0 : visibleStart;
+  const endIdx = showAllLevels ? lessons.length : visibleEnd;
+  
+  if(!showAllLevels && startIdx > 0){
+    html += `<div class="level-node locked" style="margin-bottom:4px;">···</div>`;
+    html += `<div class="level-connector"></div>`;
+  }
+  
+  for(let i = startIdx; i < endIdx; i++){
+    const lesson = lessons[i];
     const isCompleted = completed.includes(i);
     const isCurrent = i === currentLesson;
     const isLocked = i > currentLesson;
@@ -1616,8 +1634,17 @@ function renderLangDetail(lang) {
     const icon = isCompleted ? '✓' : isLocked ? '🔒' : (i + 1);
     const connectorClass = isCompleted ? 'completed' : '';
     html += `<div class="level-row ${offsetClass}"><div class="level-node ${nodeClass}" ${isLocked ? '' : `onclick="startLesson('${lang}',${i})"`}>${icon}</div></div>`;
-    if (i < lessons.length - 1) { html += `<div class="level-connector ${connectorClass}"></div>`; }
-  });
+    if (i < endIdx - 1) { html += `<div class="level-connector ${connectorClass}"></div>`; }
+  }
+  
+  if(!showAllLevels && endIdx < lessons.length){
+    html += `<div class="level-connector"></div>`;
+    html += `<div class="level-node locked" style="margin-top:4px;">···</div>`;
+  }
+  
+  if(showAllLevels){
+    html += `<button class="lang-setting-btn" onclick="LS.set('lang_show_all_levels_${lang}',false);renderLangDetail('${lang}');" style="margin-top:8px;">▲ 收起</button>`;
+  }
   html += `</div>`;
 
   const mistakes = LS.get('lang_mistakes_'+lang, []);
