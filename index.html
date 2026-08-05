@@ -491,6 +491,7 @@
     ::-webkit-scrollbar { width:4px; }
     ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
     @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+    @keyframes fadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
   </style>
 </head>
 <body>
@@ -976,6 +977,17 @@
       <div id="diary-list"></div>
           </div>
 
+  </div>
+  <!-- 新手引导页 -->
+  <div id="onboarding-overlay" style="display:none;position:absolute;inset:0;background:#F5F5F0;z-index:200;overflow:hidden;">
+    <div id="onboarding-slides" style="width:100%;height:100%;position:relative;"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:20px 24px 32px;background:linear-gradient(transparent,#F5F5F0 40%);">
+      <div id="onboarding-dots" style="display:flex;justify-content:center;gap:6px;margin-bottom:16px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button id="onboarding-skip" onclick="finishOnboarding()" style="background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;padding:8px 12px;">跳过</button>
+        <button id="onboarding-next" onclick="onboardingNext()" style="flex:1;background:var(--brand);color:#fff;border:none;border-radius:12px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;">下一步</button>
+      </div>
+    </div>
   </div>
   <!-- 昵称输入弹窗 -->
   <div id="nickname-modal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
@@ -2731,6 +2743,67 @@ function doExportAlbumBook(){
 
 
 
+// ==================== 新手引导 ====================
+let onboardingStep = 0;
+const ONBOARDING_SLIDES = [
+  { icon: '🌿', title: '欢迎来到小世界', desc: '你的私人生活管家\n记账 · 日程 · 宝宝 · 日记\n舞蹈 · 语言 · 亲情圈', bg: 'linear-gradient(135deg,#7A9CA5,#A8C5CE)' },
+  { icon: '💰', title: '猪猪记账本', desc: '快速记一笔，10秒搞定\n分类统计 · 预算管理 · 数据洞察\n亲情圈全家共享账本', bg: 'linear-gradient(135deg,#E07A6B,#F0A89E)' },
+  { icon: '📅', title: '生活日程', desc: '管理日常安排，不再遗忘\n分类管理 · 近3天提醒\n首页自动展示待办', bg: 'linear-gradient(135deg,#8AAA7B,#B8D4A8)' },
+  { icon: '📷', title: '宝宝成长日记', desc: '记录宝宝成长的每个瞬间\n照片模板 · 心情标签\n亲情圈家人共享', bg: 'linear-gradient(135deg,#C4A265,#E0C988)' },
+  { icon: '🌙', title: '我的日记', desc: '写下每天的心情与故事\n心情统计 · 标签管理\n你的私密树洞', bg: 'linear-gradient(135deg,#9B8BB4,#C4B5D0)' },
+  { icon: '💃', title: '舞蹈练习', desc: '记录每次练习与成长\n视频封面 · 练习统计\n见证进步轨迹', bg: 'linear-gradient(135deg,#D47A8E,#E8A5B0)' },
+  { icon: '🌍', title: '语言学习', desc: '多语种词汇打卡闯关\n韩语 · 英语 · 西班牙语\n3000+词库，玩着学', bg: 'linear-gradient(135deg,#6B95A8,#94B8C9)' },
+  { icon: '🏠', title: '亲情圈', desc: '输入同一个暗号\n家人共享宝宝日记和记账\n亲情不断线', bg: 'linear-gradient(135deg,#7A9CA5,#A8C5CE)' }
+];
+
+function startOnboarding(){
+  const overlay = document.getElementById('onboarding-overlay');
+  if(!overlay) return;
+  overlay.style.display = 'block';
+  onboardingStep = 0;
+  renderOnboardingSlide();
+}
+
+function renderOnboardingSlide(){
+  const slide = ONBOARDING_SLIDES[onboardingStep];
+  const container = document.getElementById('onboarding-slides');
+  if(!container) return;
+  container.innerHTML = `
+    <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;text-align:center;background:${slide.bg};animation:fadeIn 0.4s ease;">
+      <div style="font-size:72px;margin-bottom:24px;">${slide.icon}</div>
+      <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:16px;text-shadow:0 2px 8px rgba(0,0,0,0.1);">${slide.title}</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.9);line-height:2;white-space:pre-line;">${slide.desc}</div>
+    </div>`;
+  const dots = document.getElementById('onboarding-dots');
+  if(dots){
+    dots.innerHTML = ONBOARDING_SLIDES.map((_,i)=>`<div style="width:${i===onboardingStep?'24px':'8px'};height:8px;border-radius:4px;background:${i===onboardingStep?'#fff':'rgba(255,255,255,0.4)'};transition:all 0.3s ease;"></div>`).join('');
+  }
+  const nextBtn = document.getElementById('onboarding-next');
+  if(nextBtn){
+    nextBtn.textContent = onboardingStep === ONBOARDING_SLIDES.length - 1 ? '开始使用 🚀' : '下一步';
+  }
+  const skipBtn = document.getElementById('onboarding-skip');
+  if(skipBtn){
+    skipBtn.style.display = onboardingStep === ONBOARDING_SLIDES.length - 1 ? 'none' : 'block';
+  }
+}
+
+function onboardingNext(){
+  if(onboardingStep < ONBOARDING_SLIDES.length - 1){
+    onboardingStep++;
+    renderOnboardingSlide();
+  } else {
+    finishOnboarding();
+  }
+}
+
+function finishOnboarding(){
+  LS.set('onboarding_completed', true);
+  const overlay = document.getElementById('onboarding-overlay');
+  if(overlay) overlay.style.display = 'none';
+  ensureNickname();
+}
+
 // ==================== 昵称管理 ====================
 function getUserNickname(){ return LS.get('user_nickname', ''); }
 
@@ -3428,7 +3501,11 @@ if(!LS.get('diary_entries',null)){
 initCloud();
 loadVocab();
 renderNav();
-ensureNickname();
+if(!LS.get('onboarding_completed', false)){
+  startOnboarding();
+} else {
+  ensureNickname();
+}
 renderHomeScheduleReminder();
 renderDiary();
 checkForUpdate();
