@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v20260812';
+const CACHE_VERSION = 'v20260813';
 const CACHE_NAME = 'xiaoxiao-workbench-' + CACHE_VERSION;
 const urlsToCache = [
   './',

@@ -540,6 +540,12 @@
       </div>
 
       <!-- 概览 + 预算 -->
+      <div id="account-view-toggle" style="display:none;justify-content:center;gap:0;margin-bottom:10px;background:var(--tag-bg);border-radius:10px;padding:3px;">
+        <button id="view-mine-btn" class="view-tab active" onclick="switchAccountView('mine')" style="flex:1;padding:7px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:var(--card);color:var(--title);">只看自己</button>
+        <button id="view-family-btn" class="view-tab" onclick="switchAccountView('family')" style="flex:1;padding:7px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);">👨‍👩‍👧 全家账本</button>
+      </div>
+
+      <!-- 概览 + 预算 -->
       <div class="card">
         <div style="display:flex;gap:12px;margin-bottom:8px;">
           <div style="flex:1;text-align:center;">
@@ -1058,7 +1064,7 @@ function navTo(pageKey){
     if(n.getAttribute('data-page')===pageKey) n.classList.add('active');
   });
   if(pageKey==='home') renderHomeScheduleReminder();
-  else if(pageKey==='account') renderAccount();
+  else if(pageKey==='account'){ renderAccount(); if(cloudConnected && getRoomInfo()) pullAccountFromCloud(); }
   else if(pageKey==='dance') renderDance();
   else if(pageKey==='language') renderLangHome();
   else if(pageKey==='schedule') renderSchedule();
@@ -1147,10 +1153,53 @@ const CAT_COLORS=['#E07A6B','#9B8BB4','#6B95A8','#8AAA7B','#C4A265','#A68B6B','#
 let selectedCatIcon=CAT_ICONS[0],selectedCatColor=CAT_COLORS[0];
 function getCategories(){return LS.get('account_categories',DEFAULT_CATS);}
 
+let accountViewMode = 'mine';
+let cloudAccountRecords = [];
+
+function getDisplayRecords(){
+  const local = LS.get('account_records', []);
+  if(accountViewMode === 'family'){
+    const localIds = new Set(local.map(r=>r._id||r.date+r.time));
+    const merged = [...local];
+    cloudAccountRecords.forEach(r=>{ if(!localIds.has(r._id)) merged.push(r); });
+    return merged;
+  }
+  return local;
+}
+
+function switchAccountView(mode){
+  accountViewMode = mode;
+  const mineBtn = document.getElementById('view-mine-btn');
+  const famBtn = document.getElementById('view-family-btn');
+  if(mode === 'family'){
+    famBtn.style.background = 'var(--card)'; famBtn.style.color = 'var(--title)';
+    mineBtn.style.background = 'transparent'; mineBtn.style.color = 'var(--muted)';
+    if(cloudConnected && getRoomInfo()) pullAccountFromCloud();
+  } else {
+    mineBtn.style.background = 'var(--card)'; mineBtn.style.color = 'var(--title)';
+    famBtn.style.background = 'transparent'; famBtn.style.color = 'var(--muted)';
+  }
+  renderAccount();
+}
+
+function updateAccountViewToggle(){
+  const toggle = document.getElementById('account-view-toggle');
+  if(!toggle) return;
+  const room = getRoomInfo();
+  if(cloudConnected && room){
+    toggle.style.display = 'flex';
+  } else {
+    toggle.style.display = 'none';
+    accountViewMode = 'mine';
+  }
+}
+
 function renderAccount(){
-  const records=LS.get('account_records',[]),cats=getCategories();
+  updateAccountViewToggle();
+  const allRecords = getDisplayRecords();
+  const cats=getCategories();
   const thisMonth=new Date().getMonth(),thisYear=new Date().getFullYear();
-  const monthRecords=records.filter(r=>{const d=new Date(r.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  const monthRecords=allRecords.filter(r=>{const d=new Date(r.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
   let income=0,expense=0;const catMap={};
   monthRecords.forEach(r=>{if(r.type==='income')income+=r.amount;else{expense+=r.amount;catMap[r.cat]=(catMap[r.cat]||0)+r.amount;}});
   document.getElementById('total-income').textContent='¥'+income;
@@ -1173,16 +1222,19 @@ function renderAccount(){
     document.getElementById('pie-chart').style.background='var(--tag-bg)';
     document.getElementById('pie-legend').innerHTML='<span style="color:var(--muted);">还没有支出记录</span>';
   }
-  renderInsights(records,expense);
+  renderInsights(allRecords,expense);
   renderRank(catEntries,totalCat,cats);
   const catSelect=document.getElementById('rec-cat');
   catSelect.innerHTML=cats.map(c=>`<option value="${c.name}">${c.icon} ${c.name}</option>`).join('');
-  const monthSet=new Set(records.map(r=>r.date.slice(0,7)));
+  const monthSet=new Set(allRecords.map(r=>r.date.slice(0,7)));
   const monthArr=Array.from(monthSet).sort().reverse();
   const exportSel=document.getElementById('export-month');
   exportSel.innerHTML=monthArr.length?monthArr.map(m=>`<option value="${m}">${m}</option>`).join('')+'<option value="all">全部月份</option>':'<option value="all">全部月份</option>';
-  document.getElementById('account-streak').textContent='🔥 '+calcAccountStreak(records)+' 天';
-  const listHtml=records.slice(-20).reverse().map((r,i)=>{const origIdx=records.length-1-i;const c=cats.find(x=>x.name===r.cat);const chip=c?`<span class="cat-chip" style="background:${c.color}22;color:${c.color};">${c.icon} ${r.cat}</span>`:r.cat;return`<div class="record-item"><div style="display:flex;align-items:center;gap:6px;">${chip} ${r.note||''}<span style="font-size:11px;color:var(--hint);">${r.date}</span></div><div style="display:flex;align-items:center;gap:10px;"><div style="font-weight:700;color:${r.type==='income'?'var(--success)':'var(--error)'}">${r.type==='income'?'+':'-'}¥${r.amount}</div><button onclick="editRecord(${origIdx})" style="background:none;border:none;font-size:16px;color:var(--brand);cursor:pointer;padding:2px 6px;flex-shrink:0;">✏️</button><button onclick="deleteRecord(${origIdx})" style="background:none;border:none;font-size:16px;color:var(--error);cursor:pointer;padding:2px 6px;flex-shrink:0;">🗑</button></div></div>`;}).join('');
+  document.getElementById('account-streak').textContent='🔥 '+calcAccountStreak(allRecords)+' 天';
+  const myUid = getUserId();
+  const listHtml=allRecords.slice(-20).reverse().map((r,i)=>{const origIdx=allRecords.length-1-i;const c=cats.find(x=>x.name===r.cat);const chip=c?`<span class="cat-chip" style="background:${c.color}22;color:${c.color};">${c.icon} ${r.cat}</span>`:r.cat;const isMine = !r.uid || r.uid === myUid;
+  const whoTag = accountViewMode==='family' && r.uname ? `<span style="font-size:10px;color:${isMine?'var(--brand)':'var(--hint)'};background:${isMine?'var(--brand-light)':'var(--tag-bg)'};padding:1px 6px;border-radius:8px;">${isMine?'我':r.uname}</span>` : '';
+  return`<div class="record-item"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${chip} ${r.note||''} ${whoTag}<span style="font-size:11px;color:var(--hint);">${r.date}</span></div><div style="display:flex;align-items:center;gap:10px;"><div style="font-weight:700;color:${r.type==='income'?'var(--success)':'var(--error)'}">${r.type==='income'?'+':'-'}¥${r.amount}</div>${isMine?`<button onclick="editRecord('${r._id||origIdx}')" style="background:none;border:none;font-size:16px;color:var(--brand);cursor:pointer;padding:2px 6px;flex-shrink:0;">✏️</button><button onclick="deleteRecord('${r._id||origIdx}')" style="background:none;border:none;font-size:16px;color:var(--error);cursor:pointer;padding:2px 6px;flex-shrink:0;">🗑</button>`:''}</div></div>`;}).join('');
   document.getElementById('record-list').innerHTML=listHtml||'<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">还没有记账记录</div>';
 }
 
@@ -1204,7 +1256,7 @@ function renderRank(catEntries,totalCat,cats){
   document.getElementById('rank-list').innerHTML='<div style="font-weight:600;font-size:13px;color:var(--title);margin-bottom:4px;">🏆 分类支出排行</div>'+catEntries.slice(0,5).map(([cat,val],i)=>{const c=cats.find(x=>x.name===cat);const col=c?c.color:'#9B9B9B';return`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="cat-icon" style="background:${col}22;color:${col};">${c?c.icon:'📦'}</div><div style="font-size:12px;color:var(--title);flex-shrink:0;">${cat}</div><div class="rank-bar"><div class="rank-bar-fill" style="width:${val/totalCat*100}%;background:${col};"></div></div><div style="font-size:12px;font-weight:700;color:var(--title);flex-shrink:0;">¥${val}</div></div>`;}).join('');
 }
 
-let editingRecordIdx=null;
+let editingRecordId=null;
 function addRecord(){
   const type=document.getElementById('rec-type').value;
   const amount=parseFloat(document.getElementById('rec-amount').value);
@@ -1212,24 +1264,30 @@ function addRecord(){
   const note=document.getElementById('rec-note').value;
   if(!amount||amount<=0){alert('请输入金额');return;}
   const records=LS.get('account_records',[]);
-  if(editingRecordIdx!==null){
-    const r=records[editingRecordIdx];
-    r.type=type;r.amount=amount;r.cat=cat;r.note=note;
-    editingRecordIdx=null;
+  const myUid = getUserId();
+  const myName = getUserNickname() || '我';
+  if(editingRecordId!==null){
+    const idx = records.findIndex(r=>(r._id||'')===editingRecordId);
+    if(idx>=0){
+      records[idx].type=type;records[idx].amount=amount;records[idx].cat=cat;records[idx].note=note;
+    }
+    editingRecordId=null;
     document.getElementById('rec-submit-btn').textContent='+ 记一笔';
     document.getElementById('rec-cancel-btn').style.display='none';
   }else{
-    records.push({date:todayStr(),time:nowTime(),type,amount,cat,note});
+    const rid = 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    records.push({_id:rid, date:todayStr(),time:nowTime(),type,amount,cat,note,uid:myUid,uname:myName});
   }
   LS.set('account_records',records);
   document.getElementById('rec-amount').value='';
   document.getElementById('rec-note').value='';
   renderAccount();
+  if(cloudConnected && getRoomInfo()) pushAccountToCloud();
 }
-function editRecord(idx){
+function editRecord(rid){
   const records=LS.get('account_records',[]);
-  const r=records[idx];if(!r)return;
-  editingRecordIdx=idx;
+  const r=records.find(x=>(x._id||'')===rid);if(!r)return;
+  editingRecordId=rid;
   document.getElementById('rec-type').value=r.type;
   document.getElementById('rec-amount').value=r.amount;
   document.getElementById('rec-cat').value=r.cat;
@@ -1240,7 +1298,7 @@ function editRecord(idx){
   document.querySelector('.record-form').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function cancelEdit(){
-  editingRecordIdx=null;
+  editingRecordId=null;
   document.getElementById('rec-amount').value='';
   document.getElementById('rec-note').value='';
   document.getElementById('rec-submit-btn').textContent='+ 记一笔';
@@ -1321,12 +1379,12 @@ function deleteCategory(idx){
 }
 
 function exportCSV(){
-  const records=LS.get('account_records',[]);
+  const records=getDisplayRecords();
   const selMonth=document.getElementById('export-month').value;
   const filtered=selMonth==='all'?records:records.filter(r=>r.date.startsWith(selMonth));
   if(!filtered.length){alert('没有可导出的记录');return;}
-  const header='\uFEFF日期,时间,类型,分类,金额,备注\n';
-  const rows=filtered.map(r=>`${r.date},${r.time},${r.type==='income'?'收入':'支出'},${r.cat},${r.amount},${r.note||''}`).join('\n');
+  const header='\uFEFF日期,时间,类型,分类,金额,备注,记录人\n';
+  const rows=filtered.map(r=>`${r.date},${r.time||''},${r.type==='income'?'收入':'支出'},${r.cat},${r.amount},${r.note||''},${r.uname||''}`).join('\n');
   const blob=new Blob([header+rows],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -1336,12 +1394,15 @@ function exportCSV(){
   URL.revokeObjectURL(url);
 }
 
-function deleteRecord(idx){
+function deleteRecord(rid){
   if(!confirm('确定删除这条记账记录？'))return;
   const records=LS.get('account_records',[]);
+  const idx=records.findIndex(r=>(r._id||'')===rid);
+  if(idx<0)return;
   records.splice(idx,1);
   LS.set('account_records',records);
   renderAccount();
+  if(cloudConnected && getRoomInfo()) pushAccountToCloud();
 }
 
 // ==================== 跳舞记录 ====================
@@ -2189,6 +2250,57 @@ async function syncAlbum(){
   if(!cloudConnected || !getRoomInfo()){ alert('请先加入亲情圈'); return; }
   await pullAlbumFromCloud();
   await pushAlbumToCloud();
+}
+
+async function pushAccountToCloud(){
+  const room = getRoomInfo();
+  if(!room || !cloudConnected || cloudSyncing) return;
+  cloudSyncing = true;
+  try {
+    const records = LS.get('account_records', []);
+    const myUid = getUserId();
+    const myRecords = records.filter(r => !r.uid || r.uid === myUid);
+    if(myRecords.length === 0){ cloudSyncing = false; return; }
+    const cloudRecords = myRecords.map(r => ({
+      id: r._id,
+      room_code: room.code,
+      date: r.date,
+      time: r.time || '',
+      type: r.type,
+      amount: r.amount,
+      cat: r.cat,
+      note: r.note || '',
+      uid: r.uid || myUid,
+      uname: r.uname || getUserNickname() || '我'
+    }));
+    const { error } = await sbClient.from('account_records').upsert(cloudRecords, { onConflict: 'id' });
+    if(error) console.error('Account push failed:', error.message);
+  } catch(e){ console.error('Account push error:', e); }
+  cloudSyncing = false;
+}
+
+async function pullAccountFromCloud(){
+  const room = getRoomInfo();
+  if(!room || !cloudConnected || cloudSyncing) return;
+  cloudSyncing = true;
+  try {
+    const { data, error } = await sbClient.from('account_records').select('*').eq('room_code', room.code);
+    if(error){ console.error('Account pull failed:', error.message); cloudSyncing = false; return; }
+    if(!data){ cloudSyncing = false; return; }
+    cloudAccountRecords = data.map(r => ({
+      _id: r.id,
+      date: r.date,
+      time: r.time || '',
+      type: r.type,
+      amount: r.amount,
+      cat: r.cat,
+      note: r.note || '',
+      uid: r.uid || '',
+      uname: r.uname || ''
+    }));
+    if(accountViewMode === 'family') renderAccount();
+  } catch(e){ console.error('Account pull error:', e); }
+  cloudSyncing = false;
 }
 
 function showSyncStatus(msg, type){
