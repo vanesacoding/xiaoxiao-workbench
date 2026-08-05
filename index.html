@@ -494,7 +494,7 @@
   <div class="sidebar" id="sidebar-nav">
     <div class="nav-item avatar-item active" data-page="home" onclick="navTo('home')">
       <div class="nav-icon">🌿</div>
-      <div class="nav-label">工作台</div>
+      <div class="nav-label">首页</div>
     </div>
     <div id="nav-dynamic-items"></div>
     <div class="nav-item" data-page="customize" onclick="navTo('customize')">
@@ -508,18 +508,20 @@
 
     <!-- ====== 首页/欢迎 ====== -->
     <div class="page active" id="page-home">
-      <div style="text-align:center;padding:60px 20px;">
-        <div style="font-size:64px;margin-bottom:16px;">🌿</div>
-        <div style="font-size:24px;font-weight:800;color:var(--brand);margin-bottom:8px;">小世界</div>
-        <div style="font-size:14px;color:var(--muted);line-height:1.8;">
+      <div id="home-welcome" style="text-align:center;padding:48px 20px 20px;">
+        <div style="font-size:56px;margin-bottom:12px;">🌿</div>
+        <div id="home-title" style="font-size:22px;font-weight:800;color:var(--brand);margin-bottom:8px;">小世界</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;">
           记账 · 跳舞 · 语言<br>
           日程 · 开心 · 日记
         </div>
-        <div style="margin-top:40px;font-size:12px;color:var(--hint);">
+        <div style="margin-top:20px;font-size:12px;color:var(--hint);">
           点击左侧导航开始使用
         </div>
       </div>
-          </div>
+      <div id="home-schedule-reminder"></div>
+      <div id="home-module-list" style="padding:0 4px 16px;"></div>
+    </div>
 
     <!-- ====== 账本 ====== -->
     <div class="page" id="page-account">
@@ -960,6 +962,16 @@
       <div id="diary-list"></div>
           </div>
 
+  </div>
+  <!-- 昵称输入弹窗 -->
+  <div id="nickname-modal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+    <div style="background:var(--card);border-radius:16px;padding:32px 24px;width:280px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.12);">
+      <div style="font-size:40px;margin-bottom:12px;">🌱</div>
+      <div style="font-size:18px;font-weight:700;color:var(--title);margin-bottom:8px;">欢迎来到小世界</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">先告诉我你的昵称吧～<br>我会为你打造专属小天地</div>
+      <input id="nickname-input" type="text" placeholder="输入你的昵称" maxlength="10" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;text-align:center;margin-bottom:16px;outline:none;transition:border-color 0.2s;">
+      <button id="nickname-btn" onclick="saveNickname()" style="width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:opacity 0.2s;">开始使用 🚀</button>
+    </div>
   </div>
 </div>
 
@@ -2300,18 +2312,116 @@ function doExportAlbumBook(){
 
 
 
+// ==================== 昵称管理 ====================
+function getUserNickname(){ return LS.get('user_nickname', ''); }
+
+function ensureNickname(){
+  const nick = getUserNickname();
+  if(!nick){
+    const modal = document.getElementById('nickname-modal');
+    if(modal){
+      modal.style.display = 'flex';
+      const input = document.getElementById('nickname-input');
+      if(input){
+        setTimeout(()=>input.focus(), 200);
+        input.onkeydown = e=>{ if(e.key==='Enter') saveNickname(); };
+      }
+    }
+    return false;
+  }
+  applyNicknames();
+  return true;
+}
+
+function saveNickname(){
+  const input = document.getElementById('nickname-input');
+  if(!input) return;
+  const nick = input.value.trim();
+  if(!nick){ input.style.borderColor = 'var(--error)'; input.placeholder = '昵称不能为空哦'; return; }
+  LS.set('user_nickname', nick);
+  const modal = document.getElementById('nickname-modal');
+  if(modal) modal.style.display = 'none';
+  applyNicknames();
+  renderHomeModuleList();
+}
+
+function applyNicknames(){
+  const nick = getUserNickname();
+  if(!nick) return;
+  const homeTitle = document.getElementById('home-title');
+  if(homeTitle) homeTitle.textContent = nick + '的小世界';
+  const titleMap = {
+    'page-account': nick + '的记账本',
+    'page-schedule': nick + '的生活日程',
+    'page-diary': nick + '的日记本'
+  };
+  Object.entries(titleMap).forEach(([pid, title])=>{
+    const page = document.getElementById(pid);
+    if(page){
+      const t = page.querySelector('.page-title');
+      if(t) t.textContent = title;
+    }
+  });
+}
+
+function renderHomeScheduleReminder(){
+  const container = document.getElementById('home-schedule-reminder');
+  if(!container) return;
+  const nick = getUserNickname();
+  const cats = getSchCats();
+  const completions = LS.get('schedule_completions', {});
+  const days = [];
+  for(let i = 0; i < 3; i++){
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const events = getEventsForDate(dateStr).sort((a,b)=>a.time.localeCompare(b.time));
+    days.push({dateStr, dateObj: d, events});
+  }
+  const allEvents = days.flatMap(d=>d.events);
+  if(allEvents.length === 0){
+    container.innerHTML = `<div style="margin:0 4px 16px;padding:14px 16px;background:var(--card);border-radius:12px;box-shadow:var(--shadow-soft);"><div style="font-size:13px;color:var(--brand);font-weight:600;">🌤️ ${nick||'你'}，最近三天没有日程，享受自由时光吧～</div></div>`;
+    return;
+  }
+  const dayLabels = ['今天', '明天', '后天'];
+  let html = `<div style="margin:0 4px 16px;padding:16px;background:var(--card);border-radius:12px;box-shadow:var(--shadow-soft);">`;
+  html += `<div style="font-size:13px;color:var(--brand);font-weight:600;margin-bottom:12px;">📋 ${nick||'你'}，最近三天的日程在这里，记得消灭所有 todo 哟～</div>`;
+  days.forEach((day, idx) => {
+    if(day.events.length === 0) return;
+    const dateLabel = dayLabels[idx];
+    const dateText = `${day.dateObj.getMonth()+1}月${day.dateObj.getDate()}日`;
+    html += `<div style="margin-bottom:8px;">`;
+    html += `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600;">${dateLabel} · ${dateText}</div>`;
+    day.events.forEach(ev => {
+      const cat = cats.find(c=>c.key===ev.cat) || cats[cats.length-1];
+      const isDone = completions[`${ev.id}_${day.dateStr}`];
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;margin-bottom:3px;background:${isDone?'var(--brand-light)':'var(--tag-bg)'};border-radius:6px;${isDone?'opacity:0.55;':''}">`;
+      html += `<span style="font-size:13px;">${cat.icon}</span>`;
+      html += `<span style="font-size:11px;color:var(--muted);min-width:32px;">${ev.time}</span>`;
+      html += `<span style="font-size:12px;color:${isDone?'var(--muted)':'var(--title)'};${isDone?'text-decoration:line-through;':''}">${ev.title}</span>`;
+      if(isDone) html += `<span style="margin-left:auto;font-size:11px;">✅</span>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
 // ==================== 首页动态模块列表 + 更新检测 ====================
 function renderHomeModuleList(){
+  renderHomeScheduleReminder();
   const container = document.getElementById('home-module-list');
   if(!container) return;
   const keys = getNavConfig();
+  const nick = getUserNickname();
   const moduleDescs = {
-    account: {title:'猪猪记账本', icon:'💰', desc:'记录每一笔收支，管理预算，掌控生活开销'},
+    account: {title: nick ? nick+'的记账本' : '猪猪记账本', icon:'💰', desc:'记录每一笔收支，管理预算，掌控生活开销'},
     dance: {title:'舞蹈练习', icon:'💃', desc:'记录每次练习，追踪进度，见证成长'},
     language: {title:'语言学习', icon:'🌍', desc:'多语种词汇打卡，闯关式学习，每天进步一点点'},
-    schedule: {title:'生活日程', icon:'📅', desc:'管理日常安排，支持导入手机日历提醒'},
+    schedule: {title: nick ? nick+'的生活日程' : '生活日程', icon:'📅', desc:'管理日常安排，支持导入手机日历提醒'},
     album: {title:'宝宝成长日记', icon:'📷', desc:'记录宝宝成长的每个瞬间，生成精美相册'},
-    diary: {title:'我的日记', icon:'🌙', desc:'写下每天的心情与故事，支持心情统计'},
+    diary: {title: nick ? nick+'的日记本' : '我的日记', icon:'🌙', desc:'写下每天的心情与故事，支持心情统计'},
   };
   container.innerHTML = keys.map(k=>{
     const m = moduleDescs[k];
@@ -2898,6 +3008,7 @@ if(!LS.get('diary_entries',null)){
 }
 loadVocab();
 renderNav();
+ensureNickname();
 renderHomeModuleList();
 renderDiary();
 checkForUpdate();
