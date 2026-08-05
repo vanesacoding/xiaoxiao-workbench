@@ -827,6 +827,10 @@
       <div style="font-size:12px;color:var(--muted);text-align:center;padding:12px;">
         长按模块拖动可调整顺序 · 点击开关启用/禁用
       </div>
+      <div class="card" style="margin-top:12px;">
+        <div class="custom-section-title">🏠 亲情圈</div>
+        <div id="family-circle-content"></div>
+      </div>
     </div>
 
     <!-- ====== 生活日程 ====== -->
@@ -982,11 +986,13 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
 // ==================== 工具函数 ====================
 const LS = {
   get:(k,def)=>{ try{const v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;} },
-  set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){console.error('LS save failed',e);return false;} }
+  set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){console.error('LS save failed',e);return false;} },
+  remove:(k)=>{ try{localStorage.removeItem(k);}catch(e){} }
 };
 function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function nowTime(){ const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
@@ -1051,7 +1057,7 @@ function navTo(pageKey){
   else if(pageKey==='dance') renderDance();
   else if(pageKey==='language') renderLangHome();
   else if(pageKey==='schedule') renderSchedule();
-  else if(pageKey==='album'){ ensureBabyNickname(); renderAlbum(); }
+  else if(pageKey==='album'){ ensureBabyNickname(); renderAlbum(); if(cloudConnected && getRoomInfo()) pullAlbumFromCloud(); }
   else if(pageKey==='diary') renderDiary();
   else if(pageKey==='customize') renderCustomize();
 }
@@ -1114,6 +1120,7 @@ function renderCustomize(){
       }
     });
   });
+  renderFamilyCircle();
 }
 
 function toggleModule(key){
@@ -1970,6 +1977,256 @@ function calcStreak(records){
   return streak;
 }
 
+// ==================== 亲情圈·云端同步 ====================
+let sbClient = null;
+let cloudConnected = false;
+let cloudSyncing = false;
+
+function getCloudConfig(){ return LS.get('cloud_config', { url: '', anonKey: '' }); }
+
+function initCloud(){
+  const cfg = getCloudConfig();
+  if(cfg.url && cfg.anonKey && window.supabase){
+    try {
+      sbClient = supabase.createClient(cfg.url, cfg.anonKey);
+      cloudConnected = true;
+    } catch(e){ console.error('Cloud init failed:', e); cloudConnected = false; }
+  } else {
+    cloudConnected = false;
+    sbClient = null;
+  }
+}
+
+function getUserId(){
+  let uid = LS.get('user_uid','');
+  if(!uid){ uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); LS.set('user_uid', uid); }
+  return uid;
+}
+
+function getRoomInfo(){ return LS.get('family_room', null); }
+
+function generateRoomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for(let i=0; i<6; i++){ code += chars[Math.floor(Math.random()*chars.length)]; }
+  return code;
+}
+
+function showCloudConfigModal(){
+  let modal = document.getElementById('cloud-config-modal');
+  if(modal){ modal.style.display='flex'; return; }
+  const cfg = getCloudConfig();
+  modal = document.createElement('div');
+  modal.id = 'cloud-config-modal';
+  modal.style.cssText = 'display:flex;position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:var(--card);border-radius:16px;padding:28px 20px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.12);">
+      <div style="text-align:center;font-size:32px;margin-bottom:8px;">🏠</div>
+      <div style="font-size:17px;font-weight:700;color:var(--title);margin-bottom:16px;text-align:center;">配置云端同步</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.7;">
+        使用 Supabase 免费服务实现亲情圈数据同步。<br>
+        ① 前往 supabase.com 创建免费项目<br>
+        ② 在 SQL Editor 执行建表语句<br>
+        ③ 填入下方 Project URL 和 anon key
+      </div>
+      <input class="input" id="sb-url" placeholder="Project URL" value="${cfg.url}" style="margin-bottom:8px;font-size:12px;">
+      <input class="input" id="sb-key" placeholder="anon public key" value="${cfg.anonKey}" style="margin-bottom:12px;font-size:12px;">
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="document.getElementById('cloud-config-modal').style.display='none'" style="flex:1;">取消</button>
+        <button class="btn btn-blue" onclick="saveCloudConfigFromModal()" style="flex:1;">保存</button>
+      </div>
+    </div>`;
+  document.querySelector('.phone-frame').appendChild(modal);
+}
+
+function saveCloudConfigFromModal(){
+  const url = document.getElementById('sb-url').value.trim();
+  const anonKey = document.getElementById('sb-key').value.trim();
+  if(!url || !anonKey){ alert('请填写完整'); return; }
+  LS.set('cloud_config', { url, anonKey });
+  document.getElementById('cloud-config-modal').style.display = 'none';
+  initCloud();
+  renderFamilyCircle();
+  if(cloudConnected) alert('✅ 云端同步已就绪！');
+  else alert('⚠️ 初始化失败，请检查配置是否正确');
+}
+
+async function createFamilyRoom(){
+  if(!cloudConnected){ alert('请先配置云端同步'); return; }
+  const nick = getUserNickname() || '用户';
+  const babyNick = getBabyNickname() || '宝宝';
+  const code = generateRoomCode();
+  const { error } = await sbClient.from('family_rooms').insert({
+    room_code: code,
+    room_name: nick + '的家庭',
+    baby_nickname: babyNick,
+    created_by: getUserId()
+  });
+  if(error){
+    alert('创建失败：' + (error.message || '未知错误') + '\n请确保已在 Supabase 中执行建表 SQL');
+    return;
+  }
+  LS.set('family_room', { code, name: nick+'的家庭', babyNickname: babyNick, isCreator: true });
+  await pushAlbumToCloud();
+  renderFamilyCircle();
+  alert('🎉 亲情圈创建成功！\n邀请码：' + code + '\n\n分享给家人，他们输入邀请码即可加入');
+}
+
+async function joinFamilyRoom(inputCode){
+  if(!cloudConnected){ alert('请先配置云端同步'); return; }
+  const code = (inputCode||'').trim().toUpperCase();
+  if(code.length !== 6){ alert('请输入6位邀请码'); return; }
+  const { data, error } = await sbClient.from('family_rooms').select('*').eq('room_code', code).single();
+  if(error || !data){ alert('未找到对应的亲情圈，请检查邀请码'); return; }
+  LS.set('family_room', { code: data.room_code, name: data.room_name, babyNickname: data.baby_nickname, isCreator: false });
+  await pullAlbumFromCloud();
+  renderFamilyCircle();
+  alert('✅ 已加入「' + data.room_name + '」亲情圈！');
+}
+
+function leaveFamilyRoom(){
+  if(!confirm('确定退出亲情圈？退出后将不再同步数据，本地数据保留。')) return;
+  LS.remove('family_room');
+  renderFamilyCircle();
+}
+
+function compressPhotoForCloud(dataUrl, maxSize=400, quality=0.7){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      let w = img.width, h = img.height;
+      if(w > maxSize){ h = Math.round(h * maxSize / w); w = maxSize; }
+      if(h > maxSize){ w = Math.round(w * maxSize / h); h = maxSize; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = ()=> resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+async function pushAlbumToCloud(){
+  const room = getRoomInfo();
+  if(!room || !cloudConnected || cloudSyncing) return;
+  cloudSyncing = true;
+  showSyncStatus('正在上传...', '');
+  try {
+    const entries = getAlbumEntries();
+    const cloudEntries = [];
+    for(const e of entries){
+      const compressedPhotos = [];
+      for(const p of (e.photos||[])){
+        if(p.startsWith('data:image/') && p.length > 50000){
+          compressedPhotos.push(await compressPhotoForCloud(p));
+        } else { compressedPhotos.push(p); }
+      }
+      cloudEntries.push({
+        id: e.id,
+        room_code: room.code,
+        photos: compressedPhotos,
+        text: e.text,
+        date: e.date,
+        tags: e.tags || [],
+        template: e.template || null,
+        created_by: getUserId()
+      });
+    }
+    if(cloudEntries.length === 0){
+      showSyncStatus('暂无数据需要同步', '');
+      cloudSyncing = false; return;
+    }
+    const { error } = await sbClient.from('album_entries').upsert(cloudEntries, { onConflict: 'id' });
+    if(error){ showSyncStatus('同步失败: ' + error.message, 'error'); }
+    else {
+      LS.set('last_cloud_sync', Date.now());
+      showSyncStatus('✅ 已同步 ' + cloudEntries.length + ' 条记录', 'success');
+    }
+  } catch(e){ showSyncStatus('同步异常: ' + e.message, 'error'); }
+  cloudSyncing = false;
+}
+
+async function pullAlbumFromCloud(){
+  const room = getRoomInfo();
+  if(!room || !cloudConnected || cloudSyncing) return;
+  cloudSyncing = true;
+  showSyncStatus('正在拉取...', '');
+  try {
+    const { data, error } = await sbClient.from('album_entries').select('*').eq('room_code', room.code);
+    if(error){ showSyncStatus('拉取失败: ' + error.message, 'error'); cloudSyncing = false; return; }
+    if(!data || !data.length){ showSyncStatus('云端暂无数据', ''); cloudSyncing = false; return; }
+    const localEntries = getAlbumEntries();
+    const localIds = new Set(localEntries.map(e=>e.id));
+    let newCount = 0;
+    for(const cloudEntry of data){
+      if(!localIds.has(cloudEntry.id)){
+        localEntries.push({
+          id: cloudEntry.id,
+          photos: cloudEntry.photos || [],
+          text: cloudEntry.text || '',
+          date: cloudEntry.date || todayStr(),
+          tags: cloudEntry.tags || [],
+          template: cloudEntry.template || null
+        });
+        newCount++;
+      }
+    }
+    if(newCount > 0){
+      localEntries.sort((a,b)=>a.date.localeCompare(b.date));
+      LS.set('album_entries', localEntries);
+      renderAlbum();
+    }
+    LS.set('last_cloud_sync', Date.now());
+    showSyncStatus('✅ 拉取成功，新增 ' + newCount + ' 条记录', 'success');
+  } catch(e){ showSyncStatus('拉取异常: ' + e.message, 'error'); }
+  cloudSyncing = false;
+}
+
+async function syncAlbum(){
+  if(!cloudConnected || !getRoomInfo()){ alert('请先加入亲情圈'); return; }
+  await pullAlbumFromCloud();
+  await pushAlbumToCloud();
+}
+
+function showSyncStatus(msg, type){
+  const el = document.getElementById('sync-status');
+  if(!el) return;
+  let color = 'var(--muted)';
+  if(type === 'success') color = 'var(--success)';
+  if(type === 'error') color = 'var(--error)';
+  el.innerHTML = '<span style="color:'+color+';font-size:12px;">'+msg+'</span>';
+}
+
+function renderFamilyCircle(){
+  const container = document.getElementById('family-circle-content');
+  if(!container) return;
+  const cfg = getCloudConfig();
+  const room = getRoomInfo();
+  if(!cfg.url || !cfg.anonKey){
+    container.innerHTML = '<div style="text-align:center;padding:16px 0;"><div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6;">配置云端同步后，可以和家人共享宝宝成长日记<br>每人记录的内容自动同步，亲情不断线</div><button class="btn btn-blue" onclick="showCloudConfigModal()" style="width:100%;">⚙️ 配置云端同步</button></div>';
+    return;
+  }
+  if(!cloudConnected){
+    container.innerHTML = '<div style="text-align:center;padding:16px 0;"><div style="font-size:12px;color:var(--warn);margin-bottom:12px;">⚠️ 云端连接异常，请检查配置</div><button class="btn" onclick="showCloudConfigModal()" style="width:100%;">重新配置</button></div>';
+    return;
+  }
+  if(!room){
+    container.innerHTML = '<div style="text-align:center;padding:16px 0;"><div style="font-size:12px;color:var(--success);margin-bottom:12px;">✅ 云端同步已就绪</div><button class="btn btn-blue" onclick="createFamilyRoom()" style="width:100%;margin-bottom:12px;">🏠 创建亲情圈</button><div style="font-size:11px;color:var(--muted);margin:12px 0 8px;">— 或者加入家人的亲情圈 —</div><div style="display:flex;gap:8px;"><input class="input" id="join-room-code" placeholder="输入6位邀请码" maxlength="6" style="flex:1;text-transform:uppercase;font-size:13px;"><button class="btn" onclick="joinFamilyRoom(document.getElementById(\'join-room-code\').value)" style="white-space:nowrap;">加入</button></div></div>';
+    return;
+  }
+  const lastSync = LS.get('last_cloud_sync', 0);
+  let syncText = '尚未同步';
+  if(lastSync){
+    const diff = Date.now() - lastSync;
+    if(diff < 60000) syncText = '刚刚同步';
+    else if(diff < 3600000) syncText = Math.floor(diff/60000) + '分钟前同步';
+    else syncText = new Date(lastSync).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'});
+  }
+  container.innerHTML = '<div style="padding:16px 0;"><div style="background:var(--brand-light);border-radius:10px;padding:14px;margin-bottom:12px;text-align:center;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">亲情圈邀请码</div><div style="font-size:24px;font-weight:800;color:var(--brand);letter-spacing:4px;">'+room.code+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">分享给家人即可加入</div></div><div id="sync-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center;">'+room.name+' · '+syncText+'</div><button class="btn btn-blue" onclick="syncAlbum()" style="width:100%;margin-bottom:8px;">🔄 立即同步</button><button class="btn" onclick="leaveFamilyRoom()" style="width:100%;color:var(--error);">退出亲情圈</button></div>';
+}
+
 // ==================== 宝宝昵称管理 ====================
 function getBabyNickname(){ return LS.get('baby_nickname', ''); }
 
@@ -2210,6 +2467,7 @@ function saveAlbumEntry(){
   if(!ok){alert('保存失败：照片太大，请减少照片数量或选择更小的图片');return;}
   closeAlbumForm();
   renderAlbum();
+  if(cloudConnected && getRoomInfo()) pushAlbumToCloud();
 }
 
 function deleteAlbumEntry(id){
@@ -2218,6 +2476,7 @@ function deleteAlbumEntry(id){
   entries=entries.filter(e=>e.id!==id);
   LS.set('album_entries',entries);
   renderAlbum();
+  if(cloudConnected && getRoomInfo()) pushAlbumToCloud();
 }
 
 function openAlbumExport(){
@@ -3058,6 +3317,7 @@ if(!LS.get('diary_entries',null)){
     {id:'diary_seed_5',moodKey:'😴',text:'今天太累了，但是充实的一天。早点休息吧。',date:ds(1),tags:[],template:'free'}
   ]);
 }
+initCloud();
 loadVocab();
 renderNav();
 ensureNickname();
