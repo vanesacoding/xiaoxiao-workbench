@@ -520,7 +520,6 @@
         </div>
       </div>
       <div id="home-schedule-reminder"></div>
-      <div id="home-module-list" style="padding:0 4px 16px;"></div>
     </div>
 
     <!-- ====== 账本 ====== -->
@@ -734,7 +733,7 @@
       <div class="page-header">
         <div class="page-header-left">
           <span class="page-title-icon">📷</span>
-          <span class="page-title">宝宝成长日记</span>
+          <span class="page-title" id="album-page-title">宝宝成长日记</span>
         </div>
       </div>
 
@@ -978,7 +977,7 @@
 <!-- PDF打印区域 -->
 <div id="print-area">
   <div style="padding:40px; font-family:sans-serif; color:#333;">
-    <h1 style="text-align:center; color:var(--brand); margin-bottom:30px;">🌿 宝宝成长日记</h1>
+    <h1 id="pdf-album-title" style="text-align:center; color:var(--brand); margin-bottom:30px;">🌿 宝宝成长日记</h1>
     <div id="print-album-content"></div>
   </div>
 </div>
@@ -1047,12 +1046,12 @@ function navTo(pageKey){
   document.querySelectorAll('.nav-item').forEach(n=>{
     if(n.getAttribute('data-page')===pageKey) n.classList.add('active');
   });
-  if(pageKey==='home') renderHomeModuleList();
+  if(pageKey==='home') renderHomeScheduleReminder();
   else if(pageKey==='account') renderAccount();
   else if(pageKey==='dance') renderDance();
   else if(pageKey==='language') renderLangHome();
   else if(pageKey==='schedule') renderSchedule();
-  else if(pageKey==='album') renderAlbum();
+  else if(pageKey==='album'){ ensureBabyNickname(); renderAlbum(); }
   else if(pageKey==='diary') renderDiary();
   else if(pageKey==='customize') renderCustomize();
 }
@@ -1971,6 +1970,59 @@ function calcStreak(records){
   return streak;
 }
 
+// ==================== 宝宝昵称管理 ====================
+function getBabyNickname(){ return LS.get('baby_nickname', ''); }
+
+function ensureBabyNickname(){
+  const nick = getBabyNickname();
+  if(!nick){
+    showBabyNicknameModal();
+    return false;
+  }
+  applyBabyNickname();
+  return true;
+}
+
+function showBabyNicknameModal(){
+  let modal = document.getElementById('baby-nickname-modal');
+  if(modal){ modal.style.display='flex'; const input=document.getElementById('baby-nickname-input'); if(input){ setTimeout(()=>input.focus(),200); input.onkeydown=e=>{ if(e.key==='Enter') saveBabyNickname(); }; } return; }
+  modal = document.createElement('div');
+  modal.id = 'baby-nickname-modal';
+  modal.style.cssText = 'display:flex;position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:var(--card);border-radius:16px;padding:32px 24px;width:280px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.12);">
+      <div style="font-size:40px;margin-bottom:12px;">👶</div>
+      <div style="font-size:18px;font-weight:700;color:var(--title);margin-bottom:8px;">宝宝成长日记</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">先告诉我宝宝的昵称吧～<br>我会为宝宝打造专属成长记录</div>
+      <input id="baby-nickname-input" type="text" placeholder="输入宝宝的昵称" maxlength="10" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;text-align:center;margin-bottom:16px;outline:none;transition:border-color 0.2s;">
+      <button onclick="saveBabyNickname()" style="width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">开始记录 📷</button>
+    </div>`;
+  document.querySelector('.phone-frame').appendChild(modal);
+  const input = document.getElementById('baby-nickname-input');
+  if(input){ setTimeout(()=>input.focus(),200); input.onkeydown=e=>{ if(e.key==='Enter') saveBabyNickname(); }; }
+}
+
+function saveBabyNickname(){
+  const input = document.getElementById('baby-nickname-input');
+  if(!input) return;
+  const nick = input.value.trim();
+  if(!nick){ input.style.borderColor='var(--error)'; input.placeholder='昵称不能为空哦'; return; }
+  LS.set('baby_nickname', nick);
+  const modal = document.getElementById('baby-nickname-modal');
+  if(modal) modal.style.display='none';
+  applyBabyNickname();
+  renderAlbum();
+}
+
+function applyBabyNickname(){
+  const nick = getBabyNickname();
+  if(!nick) return;
+  const albumTitle = document.getElementById('album-page-title');
+  if(albumTitle) albumTitle.textContent = nick+'成长日记';
+  const pdfTitle = document.getElementById('pdf-album-title');
+  if(pdfTitle) pdfTitle.textContent = '🌿 '+nick+'成长日记';
+}
+
 // ==================== 宝宝成长日记 ====================
 let tempAlbumPhotos=[],selectedTemplate=null;
 const ALBUM_TEMPLATES={
@@ -2204,7 +2256,7 @@ function doExportAlbumBook(){
   const entries=getAlbumEntries();
   const startMonth=document.getElementById('pdf-start-month').value;
   const endMonth=document.getElementById('pdf-end-month').value;
-  const coverTitle=document.getElementById('pdf-title').value.trim()||'宝宝成长日记';
+  const coverTitle=document.getElementById('pdf-title').value.trim()||(getBabyNickname()?getBabyNickname()+'成长日记':'宝宝成长日记');
   if(startMonth>endMonth){alert('开始月份不能晚于结束月份');return;}
   const filtered=entries.filter(e=>{const m=e.date.slice(0,7);return m>=startMonth&&m<=endMonth;}).sort((a,b)=>a.date.localeCompare(b.date));
   if(!filtered.length){alert('该范围内没有日记');return;}
@@ -3009,7 +3061,7 @@ if(!LS.get('diary_entries',null)){
 loadVocab();
 renderNav();
 ensureNickname();
-renderHomeModuleList();
+renderHomeScheduleReminder();
 renderDiary();
 checkForUpdate();
 startScheduleNotifyTimer();
