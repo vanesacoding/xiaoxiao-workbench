@@ -8,7 +8,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="小小工作台">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="shortcut icon" href="favicon-32.png">
 <title>小世界</title>
   <style>
     :root {
@@ -486,6 +490,7 @@
     /* 滚动条美化 */
     ::-webkit-scrollbar { width:4px; }
     ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+    @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
   </style>
 </head>
 <body>
@@ -3316,6 +3321,94 @@ renderHomeScheduleReminder();
 renderDiary();
 checkForUpdate();
 startScheduleNotifyTimer();
+
+// ==================== PWA 安装引导 ====================
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // 已安装或已拒绝过则不显示
+  if (LS.get('pwa_installed', false) || LS.get('pwa_dismissed', false)) return;
+  // 延迟 3 秒显示安装引导
+  setTimeout(showInstallBanner, 3000);
+});
+
+window.addEventListener('appinstalled', () => {
+  LS.set('pwa_installed', true);
+  hideInstallBanner();
+  console.log('PWA installed successfully');
+});
+
+function showInstallBanner(){
+  if(!deferredPrompt) return;
+  if(document.getElementById('install-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--card);box-shadow:0 -4px 20px rgba(0,0,0,0.1);padding:16px 20px;display:flex;align-items:center;gap:12px;animation:slideUp 0.3s ease;';
+  banner.innerHTML = `
+    <div style="font-size:32px;">🌿</div>
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:700;color:var(--title);">把小世界装到手机上</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px;">离线可用 · 全屏体验 · 像App一样好用</div>
+    </div>
+    <button id="install-dismiss-btn" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:4px 8px;">×</button>
+    <button id="install-go-btn" style="background:var(--brand);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">立即安装</button>`;
+  document.body.appendChild(banner);
+
+  document.getElementById('install-go-btn').onclick = async () => {
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if(outcome === 'accepted'){
+      LS.set('pwa_installed', true);
+    } else {
+      LS.set('pwa_dismissed', true);
+    }
+    deferredPrompt = null;
+    hideInstallBanner();
+  };
+  document.getElementById('install-dismiss-btn').onclick = () => {
+    LS.set('pwa_dismissed', true);
+    hideInstallBanner();
+  };
+}
+
+function hideInstallBanner(){
+  const b = document.getElementById('install-banner');
+  if(b) b.remove();
+}
+
+// iOS 检测 - 显示手动安装引导
+function showIOSGuide(){
+  if(LS.get('pwa_installed', false) || LS.get('ios_dismissed', false)) return;
+  const isIOS = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if(!isIOS || isStandalone) return;
+  setTimeout(() => {
+    if(document.getElementById('ios-guide')) return;
+    const guide = document.createElement('div');
+    guide.id = 'ios-guide';
+    guide.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--card);box-shadow:0 -4px 20px rgba(0,0,0,0.1);padding:16px 20px;animation:slideUp 0.3s ease;';
+    guide.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="font-size:32px;">🌿</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;color:var(--title);">把小世界装到桌面</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">像App一样全屏使用，离线也能打开</div>
+        </div>
+        <button onclick="document.getElementById('ios-guide').remove();LS.set('ios_dismissed',true);" style="background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:4px 8px;">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--body);line-height:2;padding:8px 12px;background:var(--brand-light);border-radius:8px;">
+        1. 点击底部 <b>分享</b> 按钮 <span style="font-size:16px;">⎋</span><br>
+        2. 选择 <b>「添加到主屏幕」</b><br>
+        3. 点击 <b>「添加」</b> 即可完成安装
+      </div>`;
+    document.body.appendChild(guide);
+  }, 4000);
+}
+
+showIOSGuide();
 
 // ==================== PWA Service Worker 注册 ====================
 if ('serviceWorker' in navigator) {

@@ -1,10 +1,14 @@
-const CACHE_VERSION = 'v20260811';
+const CACHE_VERSION = 'v20260812';
 const CACHE_NAME = 'xiaoxiao-workbench-' + CACHE_VERSION;
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
   './icon.svg',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-180.png',
+  './favicon-32.png',
   './vocab.js'
 ];
 
