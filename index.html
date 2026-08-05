@@ -1978,17 +1978,17 @@ function calcStreak(records){
 }
 
 // ==================== 亲情圈·云端同步 ====================
+const SB_URL = 'https://mahysioqbirzciprgqvu.supabase.co';
+const SB_ANON_KEY = 'sb_publishable_j3KyI-vzm52CqntjT55zSA_DyR5cM5R';
+
 let sbClient = null;
 let cloudConnected = false;
 let cloudSyncing = false;
 
-function getCloudConfig(){ return LS.get('cloud_config', { url: '', anonKey: '' }); }
-
 function initCloud(){
-  const cfg = getCloudConfig();
-  if(cfg.url && cfg.anonKey && window.supabase){
+  if(window.supabase){
     try {
-      sbClient = supabase.createClient(cfg.url, cfg.anonKey);
+      sbClient = supabase.createClient(SB_URL, SB_ANON_KEY);
       cloudConnected = true;
     } catch(e){ console.error('Cloud init failed:', e); cloudConnected = false; }
   } else {
@@ -2005,57 +2005,47 @@ function getUserId(){
 
 function getRoomInfo(){ return LS.get('family_room', null); }
 
-function generateRoomCode(){
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for(let i=0; i<6; i++){ code += chars[Math.floor(Math.random()*chars.length)]; }
-  return code;
+function makeRoomCode(secret){
+  return btoa(encodeURIComponent(secret.trim())).replace(/=+$/, '');
 }
 
-function showCloudConfigModal(){
-  let modal = document.getElementById('cloud-config-modal');
-  if(modal){ modal.style.display='flex'; return; }
-  const cfg = getCloudConfig();
+function showSecretModal(type){
+  let modal = document.getElementById('secret-modal');
+  if(modal){ modal.remove(); }
+  const isCreate = type === 'create';
   modal = document.createElement('div');
-  modal.id = 'cloud-config-modal';
+  modal.id = 'secret-modal';
   modal.style.cssText = 'display:flex;position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;';
   modal.innerHTML = `
     <div style="background:var(--card);border-radius:16px;padding:28px 20px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.12);">
       <div style="text-align:center;font-size:32px;margin-bottom:8px;">🏠</div>
-      <div style="font-size:17px;font-weight:700;color:var(--title);margin-bottom:16px;text-align:center;">配置云端同步</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.7;">
-        使用 Supabase 免费服务实现亲情圈数据同步。<br>
-        ① 前往 supabase.com 创建免费项目<br>
-        ② 在 SQL Editor 执行建表语句<br>
-        ③ 填入下方 Project URL 和 anon key
+      <div style="font-size:17px;font-weight:700;color:var(--title);margin-bottom:12px;text-align:center;">${isCreate?'创建亲情圈':'加入亲情圈'}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;text-align:center;">
+        ${isCreate?'输入一个暗号，家人输入同样的暗号就能共享宝宝成长日记':'输入家人告诉你的暗号，即可加入同一个亲情圈'}
       </div>
-      <input class="input" id="sb-url" placeholder="Project URL" value="${cfg.url}" style="margin-bottom:8px;font-size:12px;">
-      <input class="input" id="sb-key" placeholder="anon public key" value="${cfg.anonKey}" style="margin-bottom:12px;font-size:12px;">
-      <div style="display:flex;gap:8px;">
-        <button class="btn" onclick="document.getElementById('cloud-config-modal').style.display='none'" style="flex:1;">取消</button>
-        <button class="btn btn-blue" onclick="saveCloudConfigFromModal()" style="flex:1;">保存</button>
-      </div>
+      <input class="input" id="secret-input" placeholder="${isCreate?'例如：小开心之家':'输入暗号'}" style="margin-bottom:12px;font-size:14px;text-align:center;">
+      <button class="btn btn-blue" onclick="${isCreate?'doCreateFamilyRoom()':'doJoinFamilyRoom()'}" style="width:100%;">${isCreate?'创建 🚀':'加入 ✨'}</button>
+      <button class="btn" onclick="document.getElementById('secret-modal').style.display='none'" style="width:100%;margin-top:8px;">取消</button>
     </div>`;
   document.querySelector('.phone-frame').appendChild(modal);
+  const input = document.getElementById('secret-input');
+  if(input){ setTimeout(()=>input.focus(),200); input.onkeydown=e=>{ if(e.key==='Enter'){ isCreate?doCreateFamilyRoom():doJoinFamilyRoom(); } }; }
 }
 
-function saveCloudConfigFromModal(){
-  const url = document.getElementById('sb-url').value.trim();
-  const anonKey = document.getElementById('sb-key').value.trim();
-  if(!url || !anonKey){ alert('请填写完整'); return; }
-  LS.set('cloud_config', { url, anonKey });
-  document.getElementById('cloud-config-modal').style.display = 'none';
-  initCloud();
-  renderFamilyCircle();
-  if(cloudConnected) alert('✅ 云端同步已就绪！');
-  else alert('⚠️ 初始化失败，请检查配置是否正确');
-}
-
-async function createFamilyRoom(){
-  if(!cloudConnected){ alert('请先配置云端同步'); return; }
+async function doCreateFamilyRoom(){
+  const input = document.getElementById('secret-input');
+  if(!input) return;
+  const secret = input.value.trim();
+  if(!secret){ input.style.borderColor='var(--error)'; input.placeholder='暗号不能为空哦'; return; }
+  if(secret.length < 2){ alert('暗号太短啦，至少2个字符'); return; }
+  const code = makeRoomCode(secret);
   const nick = getUserNickname() || '用户';
   const babyNick = getBabyNickname() || '宝宝';
-  const code = generateRoomCode();
+  const { data: existing } = await sbClient.from('family_rooms').select('room_code').eq('room_code', code).single();
+  if(existing){
+    alert('这个暗号已经有人用了，换一个吧～');
+    return;
+  }
   const { error } = await sbClient.from('family_rooms').insert({
     room_code: code,
     room_name: nick + '的家庭',
@@ -2066,19 +2056,25 @@ async function createFamilyRoom(){
     alert('创建失败：' + (error.message || '未知错误') + '\n请确保已在 Supabase 中执行建表 SQL');
     return;
   }
-  LS.set('family_room', { code, name: nick+'的家庭', babyNickname: babyNick, isCreator: true });
+  LS.set('family_room', { code, secret, name: nick+'的家庭', babyNickname: babyNick, isCreator: true });
+  const modal = document.getElementById('secret-modal');
+  if(modal) modal.style.display='none';
   await pushAlbumToCloud();
   renderFamilyCircle();
-  alert('🎉 亲情圈创建成功！\n邀请码：' + code + '\n\n分享给家人，他们输入邀请码即可加入');
+  alert('🎉 亲情圈创建成功！\n暗号：「' + secret + '」\n\n告诉家人输入这个暗号即可加入');
 }
 
-async function joinFamilyRoom(inputCode){
-  if(!cloudConnected){ alert('请先配置云端同步'); return; }
-  const code = (inputCode||'').trim().toUpperCase();
-  if(code.length !== 6){ alert('请输入6位邀请码'); return; }
+async function doJoinFamilyRoom(){
+  const input = document.getElementById('secret-input');
+  if(!input) return;
+  const secret = input.value.trim();
+  if(!secret){ input.style.borderColor='var(--error)'; input.placeholder='暗号不能为空哦'; return; }
+  const code = makeRoomCode(secret);
   const { data, error } = await sbClient.from('family_rooms').select('*').eq('room_code', code).single();
-  if(error || !data){ alert('未找到对应的亲情圈，请检查邀请码'); return; }
-  LS.set('family_room', { code: data.room_code, name: data.room_name, babyNickname: data.baby_nickname, isCreator: false });
+  if(error || !data){ alert('未找到对应的亲情圈，请检查暗号是否正确'); return; }
+  LS.set('family_room', { code, secret, name: data.room_name, babyNickname: data.baby_nickname, isCreator: false });
+  const modal = document.getElementById('secret-modal');
+  if(modal) modal.style.display='none';
   await pullAlbumFromCloud();
   renderFamilyCircle();
   alert('✅ 已加入「' + data.room_name + '」亲情圈！');
@@ -2202,18 +2198,13 @@ function showSyncStatus(msg, type){
 function renderFamilyCircle(){
   const container = document.getElementById('family-circle-content');
   if(!container) return;
-  const cfg = getCloudConfig();
   const room = getRoomInfo();
-  if(!cfg.url || !cfg.anonKey){
-    container.innerHTML = '<div style="text-align:center;padding:16px 0;"><div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6;">配置云端同步后，可以和家人共享宝宝成长日记<br>每人记录的内容自动同步，亲情不断线</div><button class="btn btn-blue" onclick="showCloudConfigModal()" style="width:100%;">⚙️ 配置云端同步</button></div>';
-    return;
-  }
   if(!cloudConnected){
-    container.innerHTML = '<div style="text-align:center;padding:16px 0;"><div style="font-size:12px;color:var(--warn);margin-bottom:12px;">⚠️ 云端连接异常，请检查配置</div><button class="btn" onclick="showCloudConfigModal()" style="width:100%;">重新配置</button></div>';
+    container.innerHTML = '<div style="text-align:center;padding:16px 0;"><div style="font-size:12px;color:var(--warn);margin-bottom:12px;">⚠️ 云端连接异常，请刷新页面重试</div></div>';
     return;
   }
   if(!room){
-    container.innerHTML = '<div style="text-align:center;padding:16px 0;"><div style="font-size:12px;color:var(--success);margin-bottom:12px;">✅ 云端同步已就绪</div><button class="btn btn-blue" onclick="createFamilyRoom()" style="width:100%;margin-bottom:12px;">🏠 创建亲情圈</button><div style="font-size:11px;color:var(--muted);margin:12px 0 8px;">— 或者加入家人的亲情圈 —</div><div style="display:flex;gap:8px;"><input class="input" id="join-room-code" placeholder="输入6位邀请码" maxlength="6" style="flex:1;text-transform:uppercase;font-size:13px;"><button class="btn" onclick="joinFamilyRoom(document.getElementById(\'join-room-code\').value)" style="white-space:nowrap;">加入</button></div></div>';
+    container.innerHTML = '<div style="text-align:center;padding:16px 0;"><div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6;">输入同一个暗号，家人就能共享宝宝成长日记<br>每人记录的内容自动同步，亲情不断线</div><button class="btn btn-blue" onclick="showSecretModal(\'create\')" style="width:100%;margin-bottom:12px;">🏠 创建亲情圈</button><div style="font-size:11px;color:var(--muted);margin:12px 0 8px;">— 或者加入家人的亲情圈 —</div><button class="btn" onclick="showSecretModal(\'join\')" style="width:100%;">✨ 输入暗号加入</button></div>';
     return;
   }
   const lastSync = LS.get('last_cloud_sync', 0);
@@ -2224,7 +2215,7 @@ function renderFamilyCircle(){
     else if(diff < 3600000) syncText = Math.floor(diff/60000) + '分钟前同步';
     else syncText = new Date(lastSync).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'});
   }
-  container.innerHTML = '<div style="padding:16px 0;"><div style="background:var(--brand-light);border-radius:10px;padding:14px;margin-bottom:12px;text-align:center;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">亲情圈邀请码</div><div style="font-size:24px;font-weight:800;color:var(--brand);letter-spacing:4px;">'+room.code+'</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">分享给家人即可加入</div></div><div id="sync-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center;">'+room.name+' · '+syncText+'</div><button class="btn btn-blue" onclick="syncAlbum()" style="width:100%;margin-bottom:8px;">🔄 立即同步</button><button class="btn" onclick="leaveFamilyRoom()" style="width:100%;color:var(--error);">退出亲情圈</button></div>';
+  container.innerHTML = '<div style="padding:16px 0;"><div style="background:var(--brand-light);border-radius:10px;padding:14px;margin-bottom:12px;text-align:center;"><div style="font-size:11px;color:var(--muted);margin-bottom:4px;">亲情圈暗号</div><div style="font-size:16px;font-weight:700;color:var(--brand);">已设置 ✅</div><div style="font-size:11px;color:var(--muted);margin-top:4px;">家人输入同样暗号即可加入</div></div><div id="sync-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center;">'+room.name+' · '+syncText+'</div><button class="btn btn-blue" onclick="syncAlbum()" style="width:100%;margin-bottom:8px;">🔄 立即同步</button><button class="btn" onclick="leaveFamilyRoom()" style="width:100%;color:var(--error);">退出亲情圈</button></div>';
 }
 
 // ==================== 宝宝昵称管理 ====================
