@@ -1513,12 +1513,12 @@ function onDanceMediaChange(input){
 
 // ==================== 语言打卡系统 ====================
 // 词库从外部 vocab.js 加载，支持 localStorage 缓存离线使用
-let LANG_VOCAB = { korean: [], english: [], spanish: { A2: [], B1: [], B2: [] } };
+let LANG_VOCAB = { korean: {A1:[],A2:[],B1:[],B2:[]}, english: {A1:[],A2:[],B1:[],B2:[]}, spanish: { A2: [], B1: [], B2: [] } };
 
 async function loadVocab(){
   // Try localStorage cache first
   const cached = LS.get('vocab_cache', null);
-  if(cached && cached.korean && cached.korean.length > 50){
+  if(cached && cached.korean && ((cached.korean.A1 && cached.korean.A1.length > 10) || (cached.korean.length > 50))){
     LANG_VOCAB = cached;
     return;
   }
@@ -1539,34 +1539,56 @@ async function loadVocab(){
 }
 let langState = { lang:'korean', level:'A2', count:10, drillWords:[], index:0, answers:[], mistakes:[], startTime:0, answered:false };
 
+// Get available levels for a language
+function getLangLevels(lang){
+  if(!LANG_VOCAB[lang]) return [];
+  if(Array.isArray(LANG_VOCAB[lang])) return ['ALL'];
+  return Object.keys(LANG_VOCAB[lang]).sort();
+}
+
 function getVocab(lang, level) {
   let vocab;
-  if(lang==='spanish') vocab = (LANG_VOCAB.spanish && (LANG_VOCAB.spanish[level] || LANG_VOCAB.spanish.A2)) || [];
-  else vocab = (LANG_VOCAB[lang]) || [];
+  if(LANG_VOCAB[lang] && !Array.isArray(LANG_VOCAB[lang])){
+    const levels = Object.keys(LANG_VOCAB[lang]).sort();
+    if(level && LANG_VOCAB[lang][level]) vocab = LANG_VOCAB[lang][level];
+    else vocab = LANG_VOCAB[lang][levels[0]] || [];
+  } else {
+    vocab = (LANG_VOCAB[lang]) || [];
+  }
   return shuffle(vocab.slice());
 }
 
 function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
+function getLangLevel(lang){
+  const levels = getLangLevels(lang);
+  if(levels.length <= 1) return null;
+  return LS.get('lang_level_'+lang, levels[0]);
+}
+
+function setLangLevel(lang, lvl){ LS.set('lang_level_'+lang, lvl); renderLangDetail(lang); }
+
 function renderLangHome() {
   const content = document.getElementById('lang-home-content');
   if(!content) return;
   const langs = [
-    {id:'korean', flag:'🇰🇷', name:'韩语', desc:'日常高频词汇'},
-    {id:'english', flag:'🇬🇧', name:'英语', desc:'商务场景词汇'},
+    {id:'korean', flag:'🇰🇷', name:'韩语', desc:'TOPIK分级词汇'},
+    {id:'english', flag:'🇬🇧', name:'英语', desc:'CEFR分级词汇'},
     {id:'spanish', flag:'🇪🇸', name:'西语', desc:'DELE分级词汇'}
   ];
   let html = '';
   langs.forEach(l => {
-    const vocab = getVocab(l.id, l.id==='spanish'?(LS.get('lang_level_spanish','A2')):null);
+    const level = getLangLevel(l.id);
+    const vocab = getVocab(l.id, level);
     const total = vocab.length;
     const learned = LS.get('lang_learned_'+l.id, []).length;
     const records = LS.get('lang_records_'+l.id, []);
     const streak = calcLangStreak(records);
+    const levelTag = level ? '<span style="font-size:10px;color:var(--brand);background:var(--brand-light);padding:1px 6px;border-radius:8px;margin-left:4px;">'+level+'</span>' : '';
     html += `<div class="lang-home-card" onclick="goToLangDetail('${l.id}')">
       <div class="lang-home-flag">${l.flag}</div>
       <div class="lang-home-info">
-        <div class="lang-home-name">${l.name}</div>
+        <div class="lang-home-name">${l.name}${levelTag}</div>
         <div class="lang-home-desc">${l.desc}</div>
         <div class="lang-home-stats">已学 ${learned}/${total} · 连续 ${streak} 天</div>
         <div class="lang-progress-bar"><div class="lang-progress-fill" style="width:${total?learned/total*100:0}%"></div></div>
@@ -1614,7 +1636,8 @@ function calcLangStreak(records) {
 function renderLangDetail(lang) {
   const panel = document.getElementById(lang+'-detail-panel');
   if(!panel) return;
-  const level = lang==='spanish'?LS.get('lang_level_spanish','A2'):null;
+  const level = getLangLevel(lang);
+  const levels = getLangLevels(lang);
   const vocab = getVocab(lang, level);
   const lessons = getLessons(lang, level);
   const completed = LS.get('lang_lessons_completed_'+lang, []);
@@ -1624,9 +1647,13 @@ function renderLangDetail(lang) {
   const learned = LS.get('lang_learned_'+lang, []).length;
   const currentLesson = lessons.findIndex((_, i) => !completed.includes(i));
 
+  const langNames = {korean:'韩语', english:'英语', spanish:'西语'};
+  const langDescs = {korean:'TOPIK分级词汇', english:'CEFR分级词汇', spanish:'DELE分级词汇'};
+  const langFlags = {korean:'🇰🇷', english:'🇬🇧', spanish:'🇪🇸'};
+
   let html = `<div class="lang-overview">
-    <div class="lang-flag-big">${lang==='korean'?'🇰🇷':lang==='english'?'🇬🇧':'🇪🇸'}</div>
-    <div style="font-weight:700;color:var(--title);margin-top:6px;">${lang==='korean'?'韩语日常高频':lang==='english'?'英语商务场景':'西语DELE分级'}</div>
+    <div class="lang-flag-big">${langFlags[lang]}</div>
+    <div style="font-weight:700;color:var(--title);margin-top:6px;">${langNames[lang]}${level?' · '+level:''}</div>
   </div>`;
 
   html += `<div class="lang-streak-banner">
@@ -1635,13 +1662,13 @@ function renderLangDetail(lang) {
     <div class="lang-streak-item"><div class="lang-streak-num">${learned}/${vocab.length}</div><div class="lang-streak-label">📖 已学单词</div></div>
   </div>`;
 
-  if(lang==='spanish'){
-    const curLevel = LS.get('lang_level_spanish','A2');
-    html += `<div class="lang-settings">
-      <button class="lang-setting-btn ${curLevel==='A2'?'active':''}" onclick="setSpanishLevel('A2')">A2</button>
-      <button class="lang-setting-btn ${curLevel==='B1'?'active':''}" onclick="setSpanishLevel('B1')">B1</button>
-      <button class="lang-setting-btn ${curLevel==='B2'?'active':''}" onclick="setSpanishLevel('B2')">B2</button>
-    </div>`;
+  if(levels.length > 1){
+    const curLevel = level || levels[0];
+    html += `<div class="lang-settings">`;
+    levels.forEach(lvl => {
+      html += `<button class="lang-setting-btn ${curLevel===lvl?'active':''}" onclick="setLangLevel('${lang}','${lvl}')">${lvl}</button>`;
+    });
+    html += `</div>`;
   }
 
   // Level path: show collapsed by default, only current ± 2 visible
@@ -1714,11 +1741,12 @@ function backToLangHome() {
   renderLangHome();
 }
 
-function setSpanishLevel(lvl){ LS.set('lang_level_spanish',lvl); renderLangDetail('spanish'); }
+// setSpanishLevel kept for backward compat but now uses generic version
+function setSpanishLevel(lvl){ setLangLevel('spanish', lvl); }
 function setLangCount(lang,c){ LS.set('lang_count_'+lang,c); renderLangDetail(lang); }
 
 function startLesson(lang, lessonIdx){
-  const level = lang==='spanish'?LS.get('lang_level_spanish','A2'):null;
+  const level = getLangLevel(lang);
   const lessons = getLessons(lang, level);
   const lesson = lessons[lessonIdx];
   if(!lesson) return;
