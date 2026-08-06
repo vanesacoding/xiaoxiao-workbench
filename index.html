@@ -1118,15 +1118,19 @@ function renderCustomize(){
     </div>`;
   }).join('');
 
+  // 拖拽排序（同时支持桌面 HTML5 Drag 和移动端 Touch）
   let dragKey = null;
-  enabledList.querySelectorAll('.custom-module-item').forEach(item=>{
+  const dragItems = enabledList.querySelectorAll('.custom-module-item');
+
+  // --- 桌面端 HTML5 Drag API ---
+  dragItems.forEach(item=>{
     item.addEventListener('dragstart', e=>{
       dragKey = item.dataset.key;
       item.classList.add('dragging');
     });
     item.addEventListener('dragend', ()=>{
       item.classList.remove('dragging');
-      enabledList.querySelectorAll('.custom-module-item').forEach(x=>x.classList.remove('drag-over'));
+      dragItems.forEach(x=>x.classList.remove('drag-over'));
     });
     item.addEventListener('dragover', e=>{ e.preventDefault(); item.classList.add('drag-over'); });
     item.addEventListener('dragleave', ()=>{ item.classList.remove('drag-over'); });
@@ -1137,12 +1141,74 @@ function renderCustomize(){
         const curKeys = getNavConfig();
         const fromIdx = curKeys.indexOf(dragKey);
         const toIdx = curKeys.indexOf(item.dataset.key);
-        curKeys.splice(fromIdx, 1);
-        curKeys.splice(toIdx, 0, dragKey);
-        setNavConfig(curKeys);
+        if(fromIdx >= 0 && toIdx >= 0){
+          curKeys.splice(fromIdx, 1);
+          curKeys.splice(toIdx, 0, dragKey);
+          setNavConfig(curKeys);
+          renderCustomize();
+        }
       }
     });
   });
+
+  // --- 移动端 Touch 事件 ---
+  let touchItem = null, touchTarget = null;
+
+  dragItems.forEach(item=>{
+    item.addEventListener('touchstart', e=>{
+      if(!e.target.closest('.custom-drag-handle')) return;
+      touchItem = item;
+      item.classList.add('dragging');
+      e.preventDefault();
+    }, {passive:false});
+
+    item.addEventListener('touchmove', e=>{
+      if(!touchItem) return;
+      e.preventDefault();
+      const y = e.touches[0].clientY;
+      let hit = null;
+      dragItems.forEach(el=>{
+        const r = el.getBoundingClientRect();
+        if(y >= r.top && y <= r.bottom) hit = el;
+      });
+      dragItems.forEach(el=>el.classList.remove('drag-over'));
+      if(hit && hit !== touchItem){
+        hit.classList.add('drag-over');
+        touchTarget = hit;
+      } else {
+        touchTarget = null;
+      }
+    }, {passive:false});
+
+    item.addEventListener('touchend', ()=>{
+      if(!touchItem) return;
+      touchItem.classList.remove('dragging');
+      dragItems.forEach(x=>x.classList.remove('drag-over'));
+      if(touchTarget && touchTarget.dataset.key !== touchItem.dataset.key){
+        const curKeys = getNavConfig();
+        const fromIdx = curKeys.indexOf(touchItem.dataset.key);
+        const toIdx = curKeys.indexOf(touchTarget.dataset.key);
+        if(fromIdx >= 0 && toIdx >= 0){
+          curKeys.splice(fromIdx, 1);
+          curKeys.splice(toIdx, 0, touchItem.dataset.key);
+          setNavConfig(curKeys);
+          renderCustomize();
+        }
+      }
+      touchItem = null;
+      touchTarget = null;
+    });
+
+    item.addEventListener('touchcancel', ()=>{
+      if(touchItem){
+        touchItem.classList.remove('dragging');
+        dragItems.forEach(x=>x.classList.remove('drag-over'));
+      }
+      touchItem = null;
+      touchTarget = null;
+    });
+  });
+
   renderFamilyCircle();
 }
 
