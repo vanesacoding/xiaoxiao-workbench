@@ -53,24 +53,24 @@
 
     /* 左侧导航 */
     .sidebar {
-      width:72px; background:var(--card);
+      width:68px; background:var(--card);
       border-right:1px solid var(--border);
       display:flex; flex-direction:column; align-items:center;
-      padding-top:50px; padding-bottom:20px; z-index:1;
+      padding-top:40px; padding-bottom:16px; z-index:1;
       overflow-y:auto; flex-shrink:0;
     }
     .sidebar::-webkit-scrollbar { display:none; }
     .nav-item {
       display:flex; flex-direction:column; align-items:center;
-      margin-bottom:20px; cursor:pointer; padding:6px 4px;
-      border-radius:8px; width:60px; transition:all 0.2s;
+      margin-bottom:16px; cursor:pointer; padding:4px 2px;
+      border-radius:8px; width:56px; transition:all 0.2s;
     }
     .nav-item.active { background:var(--brand-light); box-shadow:inset 3px 0 0 var(--brand), 0 0 12px rgba(122,156,165,0.15); }
     .nav-item.active .nav-icon { color:var(--brand); }
     .nav-item.active .nav-label { color:var(--brand); font-weight:600; }
     .nav-icon {
       width:28px; height:28px; display:flex; align-items:center; justify-content:center;
-      font-size:22px; margin-bottom:4px; transition:all 0.2s; color:var(--hint);
+      font-size:20px; margin-bottom:3px; transition:all 0.2s; color:var(--hint);
     }
     .nav-item.active .nav-icon { transform:scale(1.1); }
     .nav-label { font-size:10px; color:var(--hint); text-align:center; line-height:1.25; }
@@ -79,14 +79,14 @@
 
     /* 主内容区 */
     .main-content { flex:1; display:flex; flex-direction:column;
-      z-index:1; overflow-y:auto; padding:20px 20px 16px 12px;
+      z-index:1; overflow-y:auto; padding:12px 12px 12px 8px;
     }
     .main-content::-webkit-scrollbar { display:none; }
 
-    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
-    .page-header-left { display:flex; align-items:center; gap:8px; }
-    .page-title-icon { font-size:18px; color:var(--brand); }
-    .page-title { font-size:18px; font-weight:600; color:var(--title); letter-spacing:1px; }
+    .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .page-header-left { display:flex; align-items:center; gap:6px; }
+    .page-title-icon { font-size:16px; color:var(--brand); }
+    .page-title { font-size:16px; font-weight:600; color:var(--title); letter-spacing:1px; }
     .page-header-actions { display:flex; gap:10px; }
     .page-header-actions button {
       background:none; border:none; font-size:18px; cursor:pointer;
@@ -94,9 +94,9 @@
     }
     .page-header-actions button:hover { background:var(--tag-bg); }
 
-    .tabs { display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
-    .tab { display:flex; align-items:center; gap:4px; padding:8px 18px;
-      border-radius:var(--radius-btn); font-size:13px; cursor:pointer;
+    .tabs { display:flex; justify-content:center; gap:6px; margin-bottom:12px; }
+    .tab { display:flex; align-items:center; gap:4px; padding:6px 12px;
+      border-radius:var(--radius-btn); font-size:12px; cursor:pointer;
       background:var(--card); color:var(--muted); transition:all 0.2s;
       border:1px solid var(--border);
     }
@@ -108,13 +108,13 @@
     .page.active { display:block; }
 
     /* 通用组件 */
-    .card { background:var(--card); border-radius:var(--radius-card); padding:16px;
-      margin-bottom:12px; border:1px solid var(--border);
+    .card { background:var(--card); border-radius:var(--radius-card); padding:12px;
+      margin-bottom:10px; border:1px solid var(--border);
     }
     .card-elevated { box-shadow:var(--shadow-soft); }
     .btn {
       background:var(--brand); color:#fff; border:none; border-radius:var(--radius-btn);
-      padding:10px 24px; font-size:15px; font-weight:600;
+      padding:8px 16px; font-size:13px; font-weight:600;
       cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; gap:6px;
     }
     .btn:active { transform:scale(0.98); }
@@ -126,8 +126,8 @@
     .btn-warn { background:var(--warn); color:var(--title); }
     .btn-error { background:var(--error); }
     .input {
-      width:100%; padding:10px 14px; border:1px solid #E0E0E0;
-      border-radius:var(--radius-input); font-size:15px; outline:none;
+      width:100%; padding:8px 10px; border:1px solid #E0E0E0;
+      border-radius:var(--radius-input); font-size:13px; outline:none;
       margin-bottom:10px; background:var(--card); color:var(--body);
     }
     .input::placeholder { color:var(--hint); }
@@ -138,7 +138,7 @@
     }
     .tab-content { display:none; }
     .tab-content.active { display:block; }
-    .section-title { font-size:15px; font-weight:600; color:var(--title); margin:16px 0 10px; display:flex; align-items:center; gap:6px; }
+    .section-title { font-size:14px; font-weight:600; color:var(--title); margin:12px 0 8px; display:flex; align-items:center; gap:6px; }
 
     /* 状态标签 */
     .tag { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:var(--radius-tag); font-size:11px; color:var(--tag-text); background:var(--tag-bg); }
@@ -1107,7 +1107,7 @@ function renderCustomize(){
 
   const available = ALL_MODULES.filter(m=>!keys.includes(m.key));
   availableList.innerHTML = available.map(m=>{
-    return `<div class="custom-module-item" data-key="${m.key}">
+    return `<div class="custom-module-item" data-key="${m.key}" draggable="true">
       <span class="custom-drag-handle" style="visibility:hidden;">⋮⋮</span>
       <div class="custom-module-icon">${m.icon}</div>
       <div class="custom-module-info">
@@ -1163,6 +1163,34 @@ const DEFAULT_CATS=[
 const CAT_ICONS=['🍜','🚗','🛍️','🎮','💄','💃','📦','🏠','📚','💊','🐱','🌿','☕','🍰','✈️','🎁','💻','👗','🎵','🍎'];
 const CAT_COLORS=['#E07A6B','#9B8BB4','#6B95A8','#8AAA7B','#C4A265','#A68B6B','#D47A8E','#6BAAAA','#9B9B9B','#7A8BB4'];
 let selectedCatIcon=CAT_ICONS[0],selectedCatColor=CAT_COLORS[0];
+function showCatDetail(cat){
+  const records = getDisplayRecords().filter(r => r.cat === cat && r.type === 'expense').sort((a,b) => b.date.localeCompare(a.date));
+  if(!records.length) return;
+  let modal = document.getElementById('cat-detail-modal');
+  if(modal) modal.remove();
+  const cats = getCategories();
+  const c = cats.find(x => x.name === cat);
+  const total = records.reduce((s,r) => s + (r.amount||0), 0);
+  modal = document.createElement('div');
+  modal.id = 'cat-detail-modal';
+  modal.style.cssText = 'display:flex;position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;';
+  const rows = records.map(r => {
+    const isMine = !r.uid || r.uid === getUserId();
+    const who = r.uname && !isMine ? `<span style="font-size:10px;color:var(--hint);">${r.uname}</span>` : '';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);"><div><div style="font-size:13px;color:var(--title);">${r.note || cat}</div><div style="font-size:11px;color:var(--muted);">${r.date} ${who}</div></div><div style="font-weight:700;color:var(--error);font-size:13px;">-¥${(r.amount||0).toFixed(2)}</div></div>`;
+  }).join('');
+  modal.innerHTML = `
+    <div style="background:var(--card);border-radius:16px;padding:20px;width:320px;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.12);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:16px;font-weight:700;color:var(--title);">${c ? c.icon : '📊'} ${cat}</div>
+        <button onclick="document.getElementById('cat-detail-modal').remove()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;">×</button>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">共 ${records.length} 笔 · 合计 ¥${total.toFixed(2)}</div>
+      <div>${rows}</div>
+    </div>`;
+  document.querySelector('.phone-frame').appendChild(modal);
+}
+
 function getCategories(){return LS.get('account_categories',DEFAULT_CATS);}
 
 let accountViewMode = 'mine';
@@ -1214,22 +1242,22 @@ function renderAccount(){
   const monthRecords=allRecords.filter(r=>{const d=new Date(r.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
   let income=0,expense=0;const catMap={};
   monthRecords.forEach(r=>{if(r.type==='income')income+=r.amount;else{expense+=r.amount;catMap[r.cat]=(catMap[r.cat]||0)+r.amount;}});
-  document.getElementById('total-income').textContent='¥'+income;
-  document.getElementById('total-expense').textContent='¥'+expense;
+  document.getElementById('total-income').textContent='¥'+income.toFixed(2);
+  document.getElementById('total-expense').textContent='¥'+expense.toFixed(2);
   const budget=LS.get('account_budget',3000);
   const pct=budget>0?Math.min(expense/budget*100,100):0;
   const bar=document.getElementById('budget-bar');
   bar.style.width=pct+'%';
   bar.className='budget-bar-fill '+(pct>=100?'danger':pct>=80?'warn':'safe');
-  document.getElementById('budget-info').textContent='¥'+expense+' / ¥'+budget;
+  document.getElementById('budget-info').textContent='¥'+expense.toFixed(2)+' / ¥'+budget.toFixed(2);
   document.getElementById('budget-text').textContent=pct>=100?'⚠️ 已超支！注意控制消费':pct>=80?'🔶 预算即将用完':'✅ 预算充足';
   const catEntries=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
   const totalCat=catEntries.reduce((s,[,v])=>s+v,0);
   if(totalCat>0){
     let gradStr='',acc=0;
     catEntries.forEach(([cat,val],i)=>{const c=cats.find(x=>x.name===cat);const col=c?c.color:['#E07A6B','#9B8BB4','#6B95A8','#8AAA7B','#C4A265','#A68B6B'][i%6];const p=val/totalCat*100;gradStr+=`${col} ${acc}% ${acc+p}%,`;acc+=p;});
-    document.getElementById('pie-chart').style.background=`conic-gradient(${gradStr.slice(0,-1)})`;
-    document.getElementById('pie-legend').innerHTML=catEntries.map(([cat,val],i)=>{const c=cats.find(x=>x.name===cat);const col=c?c.color:'#9B9B9B';return`<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${col};margin-right:4px;"></span>${cat} ¥${val}</span>`;}).join('');
+    document.getElementById('pie-chart').style.background=`conic-gradient(${gradStr.slice(0,-1)})`; document.getElementById('pie-chart').style.cursor='pointer'; document.getElementById('pie-chart').onclick=()=>showCatDetail(catEntries[0][0]);
+    document.getElementById('pie-legend').innerHTML=catEntries.map(([cat,val],i)=>{const c=cats.find(x=>x.name===cat);const col=c?c.color:'#9B9B9B';return`<span style="cursor:pointer;" onclick="showCatDetail('${cat}')"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${col};margin-right:4px;"></span>${cat} ¥${val.toFixed(2)}</span>`;}).join('');
   }else{
     document.getElementById('pie-chart').style.background='var(--tag-bg)';
     document.getElementById('pie-legend').innerHTML='<span style="color:var(--muted);">还没有支出记录</span>';
@@ -1246,7 +1274,7 @@ function renderAccount(){
   const myUid = getUserId();
   const listHtml=allRecords.slice(-20).reverse().map((r,i)=>{const origIdx=allRecords.length-1-i;const c=cats.find(x=>x.name===r.cat);const chip=c?`<span class="cat-chip" style="background:${c.color}22;color:${c.color};">${c.icon} ${r.cat}</span>`:r.cat;const isMine = !r.uid || r.uid === myUid;
   const whoTag = accountViewMode==='family' && r.uname ? `<span style="font-size:10px;color:${isMine?'var(--brand)':'var(--hint)'};background:${isMine?'var(--brand-light)':'var(--tag-bg)'};padding:1px 6px;border-radius:8px;">${isMine?'我':r.uname}</span>` : '';
-  return`<div class="record-item"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${chip} ${r.note||''} ${whoTag}<span style="font-size:11px;color:var(--hint);">${r.date}</span></div><div style="display:flex;align-items:center;gap:10px;"><div style="font-weight:700;color:${r.type==='income'?'var(--success)':'var(--error)'}">${r.type==='income'?'+':'-'}¥${r.amount}</div>${isMine?`<button onclick="editRecord('${r._id||origIdx}')" style="background:none;border:none;font-size:16px;color:var(--brand);cursor:pointer;padding:2px 6px;flex-shrink:0;">✏️</button><button onclick="deleteRecord('${r._id||origIdx}')" style="background:none;border:none;font-size:16px;color:var(--error);cursor:pointer;padding:2px 6px;flex-shrink:0;">🗑</button>`:''}</div></div>`;}).join('');
+  return`<div class="record-item"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${chip} ${r.note||''} ${whoTag}<span style="font-size:11px;color:var(--hint);">${r.date}</span></div><div style="display:flex;align-items:center;gap:10px;"><div style="font-weight:700;color:${r.type==='income'?'var(--success)':'var(--error)'}">${r.type==='income'?'+':'-'}¥${(r.amount||0).toFixed(2)}</div>${isMine?`<button onclick="editRecord('${r._id||origIdx}')" style="background:none;border:none;font-size:16px;color:var(--brand);cursor:pointer;padding:2px 6px;flex-shrink:0;">✏️</button><button onclick="deleteRecord('${r._id||origIdx}')" style="background:none;border:none;font-size:16px;color:var(--error);cursor:pointer;padding:2px 6px;flex-shrink:0;">🗑</button>`:''}</div></div>`;}).join('');
   document.getElementById('record-list').innerHTML=listHtml||'<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">还没有记账记录</div>';
 }
 
@@ -1259,7 +1287,7 @@ function renderInsights(records,thisExpense){
   const momSign=thisExpense>lastExpense?'+':'';
   const dayCount=new Set(records.filter(r=>{const d=new Date(r.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;}).map(r=>r.date)).size;
   const daysInMonth=new Date(thisYear,thisMonth+1,0).getDate();
-  const dailyAvg=dayCount>0?(thisExpense/dayCount).toFixed(1):'0';
+  const dailyAvg=dayCount>0?(thisExpense/dayCount).toFixed(2):'0.00';
   document.getElementById('insight-grid').innerHTML=`<div class="insight-cell"><div class="insight-val">¥${dailyAvg}</div><div class="insight-label">日均支出</div></div><div class="insight-cell"><div class="insight-val ${momClass}">${momSign}${mom}%</div><div class="insight-label">环比上月</div></div><div class="insight-cell"><div class="insight-val">${dayCount}/${daysInMonth}</div><div class="insight-label">记账天数</div></div>`;
 }
 
@@ -1271,7 +1299,7 @@ function renderRank(catEntries,totalCat,cats){
 let editingRecordId=null;
 function addRecord(){
   const type=document.getElementById('rec-type').value;
-  const amount=parseFloat(document.getElementById('rec-amount').value);
+  const amount=Math.round(parseFloat(document.getElementById('rec-amount').value)*100)/100;
   const cat=document.getElementById('rec-cat').value;
   const note=document.getElementById('rec-note').value;
   if(!amount||amount<=0){alert('请输入金额');return;}
@@ -1301,7 +1329,7 @@ function editRecord(rid){
   const r=records.find(x=>(x._id||'')===rid);if(!r)return;
   editingRecordId=rid;
   document.getElementById('rec-type').value=r.type;
-  document.getElementById('rec-amount').value=r.amount;
+  document.getElementById('rec-amount').value=(r.amount||0).toFixed(2);
   document.getElementById('rec-cat').value=r.cat;
   document.getElementById('rec-note').value=r.note||'';
   document.getElementById('rec-submit-btn').textContent='✓ 保存修改';
@@ -1343,7 +1371,7 @@ function openBudgetSetting(){
 }
 function closeBudgetSetting(){document.getElementById('budget-overlay').classList.remove('active');}
 function saveBudget(){
-  const val=parseFloat(document.getElementById('budget-input').value);
+  const val=Math.round(parseFloat(document.getElementById('budget-input').value)*100)/100;
   if(val>0)LS.set('account_budget',val);
   closeBudgetSetting();
   renderAccount();
@@ -1396,7 +1424,7 @@ function exportCSV(){
   const filtered=selMonth==='all'?records:records.filter(r=>r.date.startsWith(selMonth));
   if(!filtered.length){alert('没有可导出的记录');return;}
   const header='\uFEFF日期,时间,类型,分类,金额,备注,记录人\n';
-  const rows=filtered.map(r=>`${r.date},${r.time||''},${r.type==='income'?'收入':'支出'},${r.cat},${r.amount},${r.note||''},${r.uname||''}`).join('\n');
+  const rows=filtered.map(r=>`${r.date},${r.time||''},${r.type==='income'?'收入':'支出'},${r.cat},${(r.amount||0).toFixed(2)},${r.note||''},${r.uname||''}`).join('\n');
   const blob=new Blob([header+rows],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
